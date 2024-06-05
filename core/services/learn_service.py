@@ -7,7 +7,7 @@ from core.entities.word_entity import Word as WordEntity
 from core.repositories.pair_repository import PairRepository
 from core.repositories.reply_repository import ReplyRepository
 from core.repositories.word_repository import WordRepository
-from init_config import config
+from config import Config
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -16,7 +16,7 @@ logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %
 class LearnService:
     def __init__(self, words: List[str], chat_id: int, session: Session):
         logger.debug(f"Initializing LearnService with words={words}, chat_id={chat_id}")
-        self.end_sentence = config.core_config.punctuation['end_sentence']
+        self.end_sentence = Config().end_sentence
         self.words = words
         self.chat_id = chat_id
         self.session = session

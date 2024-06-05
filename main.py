@@ -3,16 +3,13 @@ import sys
 import pytz
 import logging
 from datetime import datetime
-from alembic.config import Config as AlembicConfig
-from alembic import command
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 
-from core.entities.base_entity import Base
-from router import Router
-from learn import Learn
-from clear_up import CleanUp
-from init_config import config
+from bot.router import Router
+from bot.learn import Learn
+from bot.clear_up import CleanUp
+from config import Config
 
 
 # Configure logging
@@ -24,6 +21,7 @@ logging.getLogger('httpcore').setLevel(logging.WARNING)
 logging.getLogger('httpx').setLevel(logging.WARNING)
 logging.getLogger('telegram').setLevel(logging.WARNING)
 logging.getLogger('asyncio').setLevel(logging.WARNING)
+logging.getLogger('pymongo').setLevel(logging.WARNING)
 
 # Set default timezone to UTC
 def set_default_timezone():
@@ -31,15 +29,13 @@ def set_default_timezone():
     now = datetime.now(utc)
     logger.info(f"Current time in UTC: {now}")
 
+config = Config()
 
 # Database setup
-DATABASE_URI = config.core_config.get_string("database", "url")
-logger.debug(f"Database URI: {DATABASE_URI}")
-engine = create_engine(DATABASE_URI)
+DATABASE_URL = config.db.url
+logger.debug(f"Database URI: {DATABASE_URL}")
+engine = create_engine(DATABASE_URL)
 Session = sessionmaker(bind=engine)
-
-logger.debug("Creating database tables if not exist.")
-Base.metadata.create_all(engine)
 
 def check_db_connection(engine):
     logger.debug("Checking database connection.")
@@ -51,26 +47,12 @@ def check_db_connection(engine):
     except Exception as e:
         logger.error(f"Failed to connect to the database: {e}")
 
-# Alembic configuration
-alembic_path = os.path.join(os.path.dirname(__file__), 'alembic.ini')
-logger.debug(f"Alembic configuration path: {alembic_path}")
-alembic_cfg = AlembicConfig(alembic_path)
-
-def run_alembic_migrations():
-    logger.debug("Running Alembic migrations.")
-    try:
-        command.upgrade(alembic_cfg, "head")
-        logger.info("Alembic migrations ran successfully.")
-    except Exception as e:
-        logger.error(f"Failed to run migrations: {e}")
-
 def main():
     if len(sys.argv) < 2:
         logger.error("Missing application argument")
         sys.exit(1)
 
     set_default_timezone()
-    # run_alembic_migrations()
     check_db_connection(engine)
 
     arg = sys.argv[1]

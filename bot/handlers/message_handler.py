@@ -65,7 +65,7 @@ class MessageHandler(GenericHandler):
         return None
 
     def learn(self) -> None:
-        if self.bot_config.async_learn:
+        if self.config.bot.async_learn:
             logger.debug("Async learn enabled, pushing to learn queue")
             self.learn_queue_repository.push(self.words, self.chat.id)
         else:

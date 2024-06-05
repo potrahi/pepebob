@@ -1,18 +1,28 @@
 version: '3.8'
 
 services:
+  app:
+    build: .
+    container_name: pepepot
+    env_file: .env
+    volumes:
+      - .:/app
+    depends_on:
+      - postgres
+      - mongo
+
   postgres:
     image: postgres:latest
     container_name: postgres
     environment:
-      POSTGRES_USER: admin
-      POSTGRES_PASSWORD: admin
-      POSTGRES_DB: pepepotdb
+      POSTGRES_USER: ${DATABASE_USER}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
+      POSTGRES_DB: ${DATABASE_NAME}
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./init-postgres.sql:/docker-entrypoint-initdb.d/init-postgres.sql
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
 
   mongo:
     image: mongo:latest

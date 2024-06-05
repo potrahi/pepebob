@@ -41,3 +41,31 @@ CREATE TABLE IF NOT EXISTS words (
 );
 
 CREATE INDEX IF NOT EXISTS index_words_on_word ON words USING btree (word);
+
+ALTER TABLE pairs DROP CONSTRAINT IF EXISTS first_id_fk;
+ALTER TABLE pairs ADD CONSTRAINT first_id_fk FOREIGN KEY (first_id) REFERENCES words ON DELETE CASCADE;
+ALTER TABLE pairs DROP CONSTRAINT IF EXISTS second_id_fk;
+ALTER TABLE pairs ADD CONSTRAINT second_id_fk FOREIGN KEY (second_id) REFERENCES words ON DELETE CASCADE;
+ALTER TABLE replies DROP CONSTRAINT IF EXISTS word_id_fk;
+ALTER TABLE replies ADD CONSTRAINT word_id_fk FOREIGN KEY (word_id) REFERENCES words ON DELETE CASCADE;
+
+CREATE UNIQUE INDEX IF NOT EXISTS unique_word_word ON words USING btree(word);
+
+ALTER TABLE replies DROP CONSTRAINT IF EXISTS pair_id_fk;
+ALTER TABLE replies ADD CONSTRAINT pair_id_fk FOREIGN KEY (pair_id) REFERENCES pairs ON DELETE CASCADE;
+
+ALTER TABLE pairs DROP CONSTRAINT IF EXISTS chat_id_fk;
+ALTER TABLE pairs ADD CONSTRAINT chat_id_fk FOREIGN KEY (chat_id) REFERENCES chats ON DELETE CASCADE;
+
+ALTER TABLE pairs ADD COLUMN IF NOT EXISTS updated_at timestamp without time zone;
+UPDATE pairs SET updated_at = now() WHERE updated_at IS NULL;
+ALTER TABLE pairs ALTER COLUMN updated_at SET NOT NULL;
+
+CREATE TABLE IF NOT EXISTS subscriptions(
+    id SERIAL PRIMARY KEY NOT NULL,
+    chat_id bigint NOT NULL,
+    name character varying NOT NULL,
+    since_id bigint
+);
+
+ALTER TABLE chats ADD COLUMN IF NOT EXISTS repost_chat_username character varying;

@@ -18,10 +18,6 @@ class Chat(Base):
     
     pairs = relationship('Pair', order_by='Pair.id', back_populates='chat')
  
-    __table_args__ = (
-        Index('index_chats_on_telegram_id', 'telegram_id'),
-    )
-    
     def __repr__(self) -> str:
         return f"""Chat(id={self.id!r}, name={self.name!r}, telegram_id={self.telegram_id!r}, 
                 repost_chat_username={self.repost_chat_username!r}), 

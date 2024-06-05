@@ -7,20 +7,19 @@ from telegram import Update
 from core.entities.chat_entity import Chat as ChatEntity
 from core.repositories.chat_repository import ChatRepository
 from core.repositories.context_repository import ContextRepository
-from init_config import config
+
+from config import Config
 
 class GenericHandler:
     def __init__(self, update: Update, session: Session):
         self.message = update.message if update.message else None
         self.session = session
-        self.core_config = config.core_config
-        self.mongo_config = self.core_config.mongo
-        self.bot_config = config.bot
-        
+        self.config = Config()
         self.context_repository = ContextRepository(
-            self.mongo_config['host'],
-            self.mongo_config['port'],
-            self.mongo_config['database_name'])
+            host=self.config.cache.host,
+            port=self.config.cache.port,
+            database_name=self.config.cache.name
+        )
 
     def before(self):
         if self.is_chat_changed:
@@ -43,13 +42,13 @@ class GenericHandler:
         if self.message and self.message.reply_to_message:
             reply_user = self.message.reply_to_message.from_user
             if reply_user:
-                return reply_user.username == self.bot_config.name
+                return reply_user.username == self.config.bot.name
         return False
 
     @property
     def has_anchors(self) -> bool:
-        anchors = self.bot_config.anchors
-        name = self.bot_config.name
+        anchors = self.config.bot.anchors
+        name = self.config.bot.name
         word_in_anchors = any(
             word.translate(str.maketrans('', '', string.punctuation)) in anchors for word in self.words)
         anchor_in_text = self.text is not None and name in self.text
@@ -69,7 +68,7 @@ class GenericHandler:
 
     @property
     def is_mentioned(self) -> bool:
-        return self.text is not None and f"@{self.bot_config.name.lower()}" in self.text
+        return self.text is not None and f"@{self.config.bot.name.lower()}" in self.text
 
     @property
     def is_command(self) -> bool:
