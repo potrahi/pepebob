@@ -2,7 +2,7 @@ import logging
 from typing import List, Optional
 import json
 from pymongo import MongoClient
-from init_config import config
+from config import Config
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -23,11 +23,10 @@ class LearnItem:
 
 class LearnQueueRepository:
     def __init__(self):
+        self.config = Config()
         logger.debug("Initializing LearnQueueRepository")
-        mongo_config = config.core_config.mongo
-        logger.debug(f"MongoDB Config: host={mongo_config['host']}, port={mongo_config['port']}, database_name={mongo_config['database_name']}")
-        self.client = MongoClient(host=mongo_config['host'], port=mongo_config['port'])
-        self.db = self.client[mongo_config['database_name']]
+        self.client = MongoClient(host=self.config.cache.host, port=self.config.cache.port)
+        self.db = self.client[self.config.cache.name]
         self.collection = self.db["learn_queue"]
 
     def push(self, message: List[str], chat_id: int) -> None:

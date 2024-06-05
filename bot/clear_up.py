@@ -4,7 +4,7 @@ from typing import List
 from sqlalchemy.orm import Session
 
 from core.repositories.pair_repository import PairRepository
-from init_config import config
+from config import Config
 
 # Configure logger
 logger = logging.getLogger(__name__)
@@ -24,7 +24,7 @@ class CleanUp:
     @staticmethod
     def clean_up(session: Session):
         with session:
-            removed_ids: List[int] = PairRepository().remove_old(session, config.bot.cleanup_limit)
+            removed_ids: List[int] = PairRepository().remove_old(session, Config().bot.cleanup_limit)
 
             if not removed_ids:
                 logger.info("Nothing to remove")

@@ -2,7 +2,7 @@ import logging
 from typing import Optional
 import json
 from pymongo import MongoClient
-from core.core_config import CoreConfig
+from config import Config
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -24,11 +24,9 @@ class WordForDeletion:
 class WordDeletionQueueRepository:
     def __init__(self):
         logger.debug("Initializing WordDeletionQueueRepository")
-        config = CoreConfig()
-        mongo_config = config.mongo
-        logger.debug(f"MongoDB Config: host={mongo_config['host']}, port={mongo_config['port']}, database_name={mongo_config['database_name']}")
-        self.client = MongoClient(host=mongo_config['host'], port=mongo_config['port'])
-        self.db = self.client[mongo_config['database_name']]
+        mongo_config = Config().cache
+        self.client = MongoClient(host=mongo_config.host, port=mongo_config.port)
+        self.db = self.client[mongo_config.name]
         self.collection = self.db["words_for_deletion"]
 
     def push(self, word_id: int, name: str) -> None:

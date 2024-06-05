@@ -15,10 +15,6 @@ class Reply(Base):
     pair = relationship('Pair', back_populates='replies')
     word = relationship('Word')
     
-    __table_args__ = (
-        UniqueConstraint('pair_id', 'word_id', name='unique_reply_pair_id_word_id'),
-    )
-        
     def __repr__(self) -> str:
         return f"""Reply(id={self.id!r}, pair_id={self.pair_id!r},
                 word_id={self.word_id!r}, count={self.count!r})"""

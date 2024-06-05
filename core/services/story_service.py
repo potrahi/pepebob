@@ -2,11 +2,11 @@ import logging
 from typing import List, Optional, Dict, Any
 from random import shuffle, randint
 
-from core.core_config import CoreConfig
 from core.entities.pair_entity import Pair as PairEntity
 from core.repositories.pair_repository import PairRepository
 from core.repositories.reply_repository import ReplyRepository
 from core.repositories.word_repository import WordRepository
+from config import Config
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -15,7 +15,7 @@ logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %
 class StoryService:
     def __init__(self, words: List[str], context: List[str], chat_id: int, sentences: Optional[int] = None, session: Any = None):
         logger.debug(f"Initializing StoryService with words={words}, context={context}, chat_id={chat_id}, sentences={sentences}")
-        self.end_sentence = CoreConfig().punctuation['end_sentence']
+        self.end_sentence = Config().end_sentence
         self.words = words
         self.context = context
         self.chat_id = chat_id

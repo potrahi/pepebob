@@ -20,13 +20,6 @@ class Pair(Base):
     first_word = relationship('Word', foreign_keys=[first_id])
     second_word = relationship('Word', foreign_keys=[second_id])
     replies = relationship('Reply', order_by='Reply.id', back_populates='pair')
-    
-    __table_args__ = (
-        Index('index_pairs_on_chat_id', 'chat_id'),
-        Index('index_pairs_on_first_id', 'first_id'),
-        Index('index_pairs_on_second_id', 'second_id'),
-        UniqueConstraint('chat_id', 'first_id', 'second_id', name='unique_pair_chat_id_first_id_second_id'),
-    )
    
     def __repr__(self) -> str:
         return f"""Pair(id={self.id!r}, chat_id={self.chat_id!r}, first_id={self.first_id!r},
