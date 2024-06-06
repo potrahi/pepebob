@@ -1,6 +1,7 @@
 import logging
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict
 from random import shuffle, randint
+from sqlalchemy.orm import Session
 
 from core.entities.pair_entity import Pair as PairEntity
 from core.repositories.pair_repository import PairRepository
@@ -13,14 +14,14 @@ logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
 class StoryService:
-    def __init__(self, words: List[str], context: List[str], chat_id: int, sentences: Optional[int] = None, session: Any = None):
+    def __init__(self, words: List[str], context: List[str], chat_id: int, session: Session, sentences: Optional[int] = None):
         logger.debug(f"Initializing StoryService with words={words}, context={context}, chat_id={chat_id}, sentences={sentences}")
         self.end_sentence = Config().end_sentence
         self.words = words
         self.context = context
         self.chat_id = chat_id
-        self.sentences = sentences
         self.session = session
+        self.sentences = sentences
         self.current_sentences = []
         self.current_word_ids = []
 

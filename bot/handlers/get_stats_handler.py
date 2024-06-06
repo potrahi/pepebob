@@ -13,12 +13,5 @@ class GetStatsHandler(GenericHandler):
 
     def call(self) -> Optional[str]:
         self.before()
-
-        with self.session as session:
-            count = PairRepository().get_pairs_count(session, self.chat.id)
-
+        count = PairRepository().get_pairs_count(self.session, self.chat.id)
         return f"Known pairs in this chat: {count}."
-
-    @staticmethod
-    def apply(update: Update, session: Session):
-        return GetStatsHandler(update, session)

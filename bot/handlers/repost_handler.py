@@ -37,7 +37,3 @@ class RepostHandler(GenericHandler):
             return False
 
         return from_user.username.lower() == self.config.bot.name.lower()
-
-    @staticmethod
-    def apply(update: Update, session, bot: Bot):
-        return RepostHandler(update, session, bot)

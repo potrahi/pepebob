@@ -15,16 +15,9 @@ logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %
 class MessageHandler(GenericHandler):
     def __init__(self, update: Update, session: Session):
         super().__init__(update, session)
-        self.learn_service = LearnService(
-            self.words, self.chat.id, self.session)
-        self.learn_queue_repository = LearnQueueRepository()
-        self.story_service = None
+        self.learn_service = LearnService(words=self.words, chat_id=self.chat.id, session=self.session)
+        self.story_service = StoryService(words=self.words, context=self.context, chat_id=self.chat.id, session=self.session)
         logger.debug("MessageHandler initialized")
-
-    def initialize_services(self):
-        self.story_service = StoryService(
-            words=self.words, context=self.context, chat_id=self.chat.id, session=self.session)
-        logger.debug("StoryService initialized")
 
     def call(self) -> Optional[str]:
         self.before()
@@ -38,8 +31,6 @@ class MessageHandler(GenericHandler):
         self.learn()
         self.context_repository.update_context(self.chat_context, self.words)
         logger.debug("Context updated")
-
-        self.initialize_services()
 
         if self.story_service is None:
             logger.debug("StoryService is None, exiting")
@@ -67,12 +58,7 @@ class MessageHandler(GenericHandler):
     def learn(self) -> None:
         if self.config.bot.async_learn:
             logger.debug("Async learn enabled, pushing to learn queue")
-            self.learn_queue_repository.push(self.words, self.chat.id)
+            LearnQueueRepository().push(self.words, self.chat.id)
         else:
             logger.debug("Async learn disabled, learning pair immediately")
             self.learn_service.learn_pair()
-
-    @staticmethod
-    def apply(update: Update, session):
-        logger.debug("Applying MessageHandler")
-        return MessageHandler(update, session)

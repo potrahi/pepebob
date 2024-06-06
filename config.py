@@ -1,6 +1,5 @@
 import os
 import ast
-import sys
 import logging
 from typing import List
 from dotenv import load_dotenv, find_dotenv
@@ -9,18 +8,11 @@ from dotenv import load_dotenv, find_dotenv
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
-def is_debug():
-    has_trace = hasattr(sys, 'gettrace') and sys.gettrace() is not None
-    has_breakpoint = sys.breakpointhook.__module__ != "sys"
-    debug_mode = has_trace or has_breakpoint
-    logger.debug(f"Debug mode: {debug_mode}")
-    return debug_mode
-
 class DatabaseConfig:
     def __init__(self, engine: str, host: str, name: str, port: int, 
                  user_name: str, password: str):
         self.engine = engine
-        self.host = 'localhost' if is_debug() else host
+        self.host = host
         self.name = name
         self.port = port
         self.user_name = user_name
@@ -34,7 +26,7 @@ class DatabaseConfig:
 class CacheConfig:
     def __init__(self, host: str = 'mongo', port: int = 27017, 
                  name: str = 'cache'):
-        self.host = 'localhost' if is_debug() else host
+        self.host = host
         self.port = port
         self.name = name
         logger.debug(f"CacheConfig initialized: host={self.host}, port={self.port}, name={self.name}")

@@ -79,7 +79,7 @@ class Router:
 
         if chat_username and msg.chat_id:
             handler = set_repost_chat_handler.SetRepostChatHandler(update, chat_member_request, self.session)
-            response = await handler.call(chat_username)
+            response = handler.call(chat_username)
             if response:
                 await self._send_response(context, msg.chat_id, response)
         else:
@@ -112,7 +112,7 @@ class Router:
     async def _handle_command(self, update: Update, context: CallbackContext, handler_class):
         logger.debug(f"Handling {handler_class.__name__} command")
         handler = handler_class(update, self.session)
-        response = await handler.call()
+        response = handler.call()
         msg = update.message
         if response and msg:
             await self._send_response(context, msg.chat_id, response)
