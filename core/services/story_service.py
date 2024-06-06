@@ -1,4 +1,3 @@
-import logging
 from typing import List, Optional, Dict
 from random import shuffle, randint
 from sqlalchemy.orm import Session
@@ -9,13 +8,8 @@ from core.repositories.reply_repository import ReplyRepository
 from core.repositories.word_repository import WordRepository
 from config import Config
 
-# Configure logging
-logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
-
 class StoryService:
     def __init__(self, words: List[str], context: List[str], chat_id: int, session: Session, sentences: Optional[int] = None):
-        logger.debug(f"Initializing StoryService with words={words}, context={context}, chat_id={chat_id}, sentences={sentences}")
         self.end_sentence = Config().end_sentence
         self.words = words
         self.context = context
@@ -26,7 +20,6 @@ class StoryService:
         self.current_word_ids = []
 
     def generate(self) -> Optional[str]:
-        logger.debug("Generating story")
         current_words: Dict[str, int] = {w.word: w.id for w in WordRepository().get_by_words(
             session=self.session, words=self.words + self.context)}
         self.current_word_ids = [current_words[w] for w in self.words if w in current_words]
@@ -36,14 +29,11 @@ class StoryService:
 
         if self.current_sentences:
             story = " ".join(self.current_sentences)
-            logger.debug(f"Generated story: {story}")
             return story
         else:
-            logger.debug("No sentences generated")
             return None
 
     def generate_sentence(self) -> None:
-        logger.debug("Generating sentence")
         sentence = []
         safety_counter = 50
 
@@ -92,7 +82,6 @@ class StoryService:
 
         if sentence:
             final_sentence = self.set_sentence_end(" ".join(sentence).strip())
-            logger.debug(f"Generated sentence: {final_sentence}")
             self.current_sentences.append(final_sentence)
 
     def set_sentence_end(self, s: str) -> str:
@@ -100,11 +89,9 @@ class StoryService:
             return s
         else:
             end_punctuation = self.end_sentence[randint(0, self.end_sentence_length - 1)]
-            logger.debug(f"Setting sentence end: {s}{end_punctuation}")
             return f"{s}{end_punctuation}"
 
     @property
     def end_sentence_length(self) -> int:
         length = len(self.end_sentence)
-        logger.debug(f"End sentence length: {length}")
         return length

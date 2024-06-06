@@ -1,4 +1,4 @@
-from sqlalchemy import BigInteger, Integer, ForeignKey, UniqueConstraint
+from sqlalchemy import BigInteger, Integer, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from core.entities.base_entity import Base

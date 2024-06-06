@@ -1,5 +1,4 @@
-import datetime
-from sqlalchemy import BigInteger, Integer, SmallInteger, TIMESTAMP, String, Index
+from sqlalchemy import BigInteger, Integer, SmallInteger, TIMESTAMP, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from core.entities.base_entity import Base
 

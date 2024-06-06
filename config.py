@@ -33,17 +33,13 @@ class CacheConfig:
 
 class BotConfig:
     def __init__(self, telegram_token: str, name: str, anchors: List[str], 
-                 async_learn: bool = False, cleanup_limit: int = 1000, twitter: bool = False, 
-                 repost_chat_ids: List[int] = [], repost_chat_id: int = 0):
+                 async_learn: bool = False, cleanup_limit: int = 1000):
         self.telegram_token = telegram_token
         self.name = name
         self.anchors = anchors
         self.async_learn = async_learn
         self.cleanup_limit = cleanup_limit
-        self.twitter = twitter
-        self.repost_chat_ids = repost_chat_ids
-        self.repost_chat_id = repost_chat_id
-        logger.debug(f"BotConfig initialized: name={self.name}, async_learn={self.async_learn}, cleanup_limit={self.cleanup_limit}, twitter={self.twitter}")
+        logger.debug(f"BotConfig initialized: name={self.name}, async_learn={self.async_learn}, cleanup_limit={self.cleanup_limit}")
 
 class Config:
     _instance = None
@@ -79,10 +75,7 @@ class Config:
             name=self.get_str('TELEGRAM_BOT_NAME'),
             anchors=self.get_str_list('TELEGRAM_BOT_ANCHORS'), 
             async_learn=self.get_boolean('TELEGRAM_BOT_ASYNC_LEARN'),
-            cleanup_limit=self.get_int('TELEGRAM_BOT_CLEANUP_LIMIT'), 
-            twitter=self.get_boolean('TELEGRAM_BOT_TWITTER'),
-            repost_chat_ids=self.get_int_list('TELEGRAM_BOT_REPOST_CHAT_IDS'), 
-            repost_chat_id=self.get_int('TELEGRAM_BOT_REPOST_CHAT_ID')
+            cleanup_limit=self.get_int('TELEGRAM_BOT_CLEANUP_LIMIT')
         )
         self.end_sentence = self.get_str_list('PUNCTUATION_END_SENTENCE')
         logger.debug("Config initialization complete")

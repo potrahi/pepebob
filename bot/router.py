@@ -1,8 +1,10 @@
 import logging
+from typing import Type
 from telegram import Update
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, CallbackContext
 from telegram.error import TelegramError
 from sqlalchemy.orm import Session
+from bot.handlers.generic_handler import GenericHandler
 from bot.handlers import (
     cool_story_handler, get_gab_handler, get_repost_chat_handler, 
     get_stats_handler, message_handler, ping_handler, repost_handler, set_gab_handler, set_repost_chat_handler)
@@ -109,7 +111,7 @@ class Router:
             except Exception as e:
                 logger.exception("Unexpected error")
 
-    async def _handle_command(self, update: Update, context: CallbackContext, handler_class):
+    async def _handle_command(self, update: Update, context: CallbackContext, handler_class: Type[GenericHandler]):
         logger.debug(f"Handling {handler_class.__name__} command")
         handler = handler_class(update, self.session)
         response = handler.call()

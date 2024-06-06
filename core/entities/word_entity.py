@@ -1,4 +1,4 @@
-from sqlalchemy import Integer, String, Index, UniqueConstraint
+from sqlalchemy import Integer, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from core.entities.base_entity import Base

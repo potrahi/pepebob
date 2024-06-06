@@ -1,6 +1,7 @@
-from typing import List, Optional
 import string
 import random
+from abc import ABC, abstractmethod
+from typing import List, Optional
 from sqlalchemy.orm import Session
 from telegram import Update
 
@@ -10,7 +11,7 @@ from core.repositories.context_repository import ContextRepository
 
 from config import Config
 
-class GenericHandler:
+class GenericHandler(ABC):
     def __init__(self, update: Update, session: Session):
         self.message = update.message if update.message else None
         self.session = session
@@ -20,6 +21,10 @@ class GenericHandler:
             port=self.config.cache.port,
             database_name=self.config.cache.name
         )
+    
+    @abstractmethod
+    def call(self):
+        pass
 
     def before(self):
         if self.is_chat_changed:

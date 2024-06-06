@@ -11,6 +11,7 @@ from core.entities.reply_entity import Reply as ReplyEntity
 
 # Configure logger
 logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
 class PairRepository:
     def has_with_word_id(self, session: Session, word_id: int) -> bool:
