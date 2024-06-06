@@ -47,3 +47,7 @@ After you have installed Docker and Docker Compose, open the terminal, go to the
 docker compose up -d
 ```
 It should run and build this bot, together with Postgresql, the initial SQL script for Postgresql, and Mongodb.
+
+## Annotatio
+
+This bot can generate sentences based on your communication with him directly or from the group chat. Sometimes, these sentences don't make sense, and sometimes, they can be funny. In any case, it requires some time until his DB of words and pairs is enough to create something. During his learning, the bot will not send any messages, so you should be patient.
