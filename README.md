@@ -5,15 +5,16 @@ python implementation of and inspired by [pepeground-bot](https://github.com/pep
 
 ## Prerequisites
 
-Python 3.8
-Docker
-Docker Compose
-Postgresql
-Mongodb
+Python 3.8.0<br>
+Docker<br>
+Docker Compose<br>
+Postgresql<br>
+Mongodb<br>
 
 ## Installation
 
 First, you need to create your own .env file inside the root directory, where you will define the required parameters for this app.
+
 Here is a template of .env file:
 ```
 TELEGRAM_BOT_TOKEN=your_telegram_bot_token
@@ -35,17 +36,14 @@ DATABASE_PASSWORD=your_db_password
 
 PUNCTUATION_END_SENTENCE=.,!,?
 ```
-I guess you understand where to fill your data—for example, TELEGRAM BOT TOKEN, etc. 
+I guess you understand where to fill your data—for example, TELEGRAM_BOT_TOKEN, etc.
 
 Your token, together with your bot, you can find how to get on the [official telegram page](https://core.telegram.org/bots/tutorial)
 
-If you don't want to install Postgresql or MongoDB on your local machine, the following sentence is for you.
-All you need is a [Docker and Docker Compose](https://docs.docker.com/compose/install/)
-
+If you don't want to install Postgresql or MongoDB on your local machine, the following sentence is for you.<br>
+All you need is a [Docker and Docker Compose](https://docs.docker.com/compose/install/)<br>
 After you have installed Docker and Docker Compose, open the terminal, go to the app folder and run this command:
-
 ```bash
 docker compose up -d
 ```
-
 It should run and build this bot, together with Postgresql, the initial SQL script for Postgresql, and Mongodb.
