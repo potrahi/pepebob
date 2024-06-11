@@ -68,7 +68,7 @@ def main():
             CleanUp.run(session)
         elif arg == "bot":
             logger.info("Running bot")
-            router = Router(config.bot.telegram_token, session)
+            router = Router(config, session)
             router.run()
         else:
             logger.error(f"Unknown application argument: {arg}")

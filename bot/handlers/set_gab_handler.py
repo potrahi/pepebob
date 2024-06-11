@@ -5,11 +5,11 @@ from telegram import Update
 
 from core.repositories.chat_repository import ChatRepository
 from bot.handlers.generic_handler import GenericHandler
-
+from config import Config
 
 class SetGabHandler(GenericHandler):
-    def __init__(self, update: Update, session: Session):
-        super().__init__(update, session)
+    def __init__(self, update: Update, session: Session, config: Config):
+        super().__init__(update, session, config)
 
     def call(self, level: int) -> Optional[str]:
         self.before()

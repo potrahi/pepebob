@@ -4,11 +4,11 @@ from sqlalchemy.orm import Session
 from telegram import Update, Bot
 
 from bot.handlers.generic_handler import GenericHandler
-
+from config import Config
 
 class RepostHandler(GenericHandler):
-    def __init__(self, update: Update, session: Session, bot: Bot):
-        super().__init__(update, session)
+    def __init__(self, update: Update, session: Session, config: Config, bot: Bot):
+        super().__init__(update, session, config)
         self.bot = bot
 
     async def call(self) -> Optional[str]:

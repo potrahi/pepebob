@@ -5,12 +5,18 @@ from telegram import Update
 
 from core.services.story_service import StoryService
 from bot.handlers.generic_handler import GenericHandler
-
+from config import Config
 
 class CoolStoryHandler(GenericHandler):
-    def __init__(self, update: Update, session: Session):
-        super().__init__(update, session)
-        self.story_service = StoryService(self.words, self.full_context, self.chat.id, self.session, 50)
+    def __init__(self, update: Update, session: Session, config: Config):
+        super().__init__(update, session, config)
+        self.story_service = StoryService(
+            words=self.words, 
+            context=self.full_context, 
+            chat_id=self.chat.id, 
+            session=self.session,
+            end_sentence=self.config.end_sentence, 
+            sentences=50)
 
     def call(self) -> Optional[str]:
         self.before()

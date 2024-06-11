@@ -8,14 +8,13 @@ from telegram import Update
 from core.entities.chat_entity import Chat as ChatEntity
 from core.repositories.chat_repository import ChatRepository
 from core.repositories.context_repository import ContextRepository
-
 from config import Config
 
 class GenericHandler(ABC):
-    def __init__(self, update: Update, session: Session):
+    def __init__(self, update: Update, session: Session, config: Config):
         self.message = update.message if update.message else None
         self.session = session
-        self.config = Config()
+        self.config = config
         self.context_repository = ContextRepository(
             host=self.config.cache.host,
             port=self.config.cache.port,
@@ -23,7 +22,7 @@ class GenericHandler(ABC):
         )
     
     @abstractmethod
-    def call(self):
+    def call(self) -> Optional[str]:
         pass
 
     def before(self):

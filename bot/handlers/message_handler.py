@@ -7,16 +7,22 @@ from core.repositories.learn_queue_repository import LearnQueueRepository
 from core.services.learn_service import LearnService
 from core.services.story_service import StoryService
 from bot.handlers.generic_handler import GenericHandler
+from config import Config
 
 # Configure logger
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
 class MessageHandler(GenericHandler):
-    def __init__(self, update: Update, session: Session):
-        super().__init__(update, session)
+    def __init__(self, update: Update, session: Session,  config: Config):
+        super().__init__(update, session, config)
         self.learn_service = LearnService(words=self.words, chat_id=self.chat.id, session=self.session)
-        self.story_service = StoryService(words=self.words, context=self.context, chat_id=self.chat.id, session=self.session)
+        self.story_service = StoryService(
+            words=self.words, 
+            context=self.context, 
+            chat_id=self.chat.id, 
+            session=self.session,
+            end_sentence=self.config.end_sentence)
         logger.debug("MessageHandler initialized")
 
     def call(self) -> Optional[str]:
