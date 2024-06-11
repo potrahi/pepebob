@@ -62,19 +62,6 @@ class BotConfig:
             "BotConfig initialized: name=%s, async_learn=%s, cleanup_limit=%d",
             self.name, self.async_learn, self.cleanup_limit)
 
-
-class TelegramConfig:
-    """Configuration class for the Telegram API."""
-
-    def __init__(self, api_id: int, api_hash: str, phone_number: str):
-        self.api_id = api_id
-        self.api_hash = api_hash
-        self.phone_number = phone_number
-        logger.debug(
-            "TelegramConfig initialized: api_id=%d, api_hash=%s, phone_number=%s",
-            self.api_id, self.api_hash, self.phone_number)
-
-
 class Config:
     """Singleton configuration class that loads environment variables."""
 
@@ -112,11 +99,6 @@ class Config:
             anchors=self.get_str_list('TELEGRAM_BOT_ANCHORS'),
             async_learn=self.get_boolean('TELEGRAM_BOT_ASYNC_LEARN'),
             cleanup_limit=self.get_int('TELEGRAM_BOT_CLEANUP_LIMIT')
-        )
-        self.app = TelegramConfig(
-            api_id=self.get_int('TELEGRAM_API_ID'),
-            api_hash=self.get_str('TELEGRAM_API_HASH'),
-            phone_number=self.get_str('TELEGRAM_PHONE_NUMBER')
         )
         self.end_sentence = self.get_str_list('PUNCTUATION_END_SENTENCE')
         logger.debug("Config initialization complete")

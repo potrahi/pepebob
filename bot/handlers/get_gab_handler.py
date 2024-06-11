@@ -10,6 +10,6 @@ class GetGabHandler(GenericHandler):
     def __init__(self, update: Update, session: Session, config: Config):
         super().__init__(update, session, config)
 
-    def call(self) -> Optional[str]:
+    async def call(self) -> Optional[str]:
         self.before()
         return f"Pizdlivost level is on {self.chat.random_chance}"

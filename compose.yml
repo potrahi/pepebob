@@ -10,6 +10,18 @@ services:
     depends_on:
       - postgres
       - mongo
+    command: ["python", "main.py", "bot"]
+  
+  learn:
+    build: .
+    container_name: peppot_learn
+    env_file: .env
+    volumes:
+      - .:/app
+    depends_on:
+      - postgres
+      - mongo
+    command: ["python", "main.py", "learn"]
 
   postgres:
     image: postgres:latest

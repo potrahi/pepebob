@@ -15,7 +15,7 @@ class SetRepostChatHandler(GenericHandler):
         super().__init__(update, session, config)
         self.chat_member_request_url = chat_member_request_url
 
-    def call(self, chat_username: str) -> Optional[str]:
+    async def call(self, chat_username: str) -> Optional[str]:
         self.before()
 
         if self.can_set_repost_chat():

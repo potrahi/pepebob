@@ -1,113 +1,89 @@
+import json
 import asyncio
-import csv
-from typing import Optional, List, Dict, Union
-from telegram import Update
-from telethon import TelegramClient, errors
-from telethon.tl.functions.messages import GetHistoryRequest
-from telethon.tl.types import (
-    PeerUser, User, Message as TelethonMessage,
-    TypeInputPeer, MessageEmpty, MessageService)
-from telethon.tl.types.messages import Messages, ChannelMessages
+import logging
+from typing import Optional, Dict, Any
+from telegram import Document, File, Update
+from telegram.error import TimedOut, NetworkError
 from sqlalchemy.orm import Session
 from bot.handlers.generic_handler import GenericHandler
 from config import Config
+from core.repositories.learn_queue_repository import LearnQueueRepository
 
+logger = logging.getLogger(__name__)
 
 class LearnHandler(GenericHandler):
-    def __init__(self, update: Update, session: Session, config: Config, client: TelegramClient):
+    def __init__(self, update: Update, session: Session,
+                 config: Config, document: Optional[Document] = None):
         super().__init__(update, session, config)
-        self.client = client
-        self.chat_id = self.telegram_id
-        
-    async def get_messages(self, history):
-        messages = []
-        user_dict: Dict[int, str] = {}
-        for message in history.messages:
-            if isinstance(message, TelethonMessage):
-                if message.from_id and isinstance(message.from_id, PeerUser):
-                    user_id = message.from_id.user_id
-                    if user_id not in user_dict:
-                        user = await self.client.get_entity(user_id)
-                        if user and isinstance(user, User):
-                            user_dict[user_id] = user.username if user.username else f"{user.first_name} {user.last_name}"
-                    sender_username = user_dict[user_id]
-                else:
-                    sender_username = None
+        self.document = document
+        self.learn_queue = LearnQueueRepository()
 
-                if isinstance(message, (MessageEmpty, MessageService)):
-                    continue
+    async def process_json_file(self) -> str:
+        if not self.document or self.document.mime_type != 'application/json':
+            return "Please send a JSON file with the /learn command."
 
-                date_str = message.date.isoformat() if message.date else "Unknown"
+        try:
+            telegram_file = await self.get_file_with_retry()
+            if not telegram_file:
+                return "Failed to download the file."
 
-                messages.append({
-                    'id': message.id,
-                    'date': date_str,
-                    'sender_username': sender_username,
-                    'message': message.message
-                })
-        return messages
+            byte_array = await telegram_file.download_as_bytearray()
+            json_data = json.loads(byte_array.decode('utf-8'))
 
-    async def get_chat_history(
-        self, chat_id: int, limit: int = 100) -> List[Dict[str, Union[int, str, Optional[str]]]]:
-        messages = []
+            extracted_data = self.extract_message_data(json_data)
+            output_file_path = 'extracted_messages.json'
+            self.save_extracted_data(extracted_data, output_file_path)
+            
+            for message in extracted_data["messages"]:
+                words = self.get_words(message["text"])
+                self.learn_queue.push(words, self.chat.id)
+                
+            return f"Processed JSON data and saved to {output_file_path}"
 
-        chat_entity = await self.client.get_entity(chat_id)
+        except Exception as e:
+            logger.error("Error processing JSON file: %s", e)
+            return "An error occurred while processing the JSON file."
 
-        if isinstance(chat_entity, list):
-            raise ValueError("Expected a single entity, but got a list")
-
-        chat: TypeInputPeer = await self.client.get_input_entity(chat_entity)
-
-        last_id = 0
-        total_messages = 0
-
-        while True:
+    async def get_file_with_retry(self, retries: int = 3, delay: int = 5) -> Optional[File]:
+        for attempt in range(retries):
             try:
-                history = await self.client(GetHistoryRequest(
-                    peer=chat,
-                    offset_id=last_id,
-                    offset_date=None,
-                    add_offset=0,
-                    limit=limit,
-                    max_id=0,
-                    min_id=0,
-                    hash=0
-                ))
+                if self.document:
+                    return await self.document.get_file()
+            except (TimedOut, NetworkError) as e:
+                logger.warning(f"Attempt {attempt + 1} of {retries} failed: {e}")
+                if attempt < retries - 1:
+                    await asyncio.sleep(delay)
+                else:
+                    return None
 
-                if not isinstance(history, (Messages, ChannelMessages)):
-                    raise ValueError("Unexpected return type from GetHistoryRequest")
+    def extract_message_data(self, json_data: Dict[str, Any]) -> Dict[str, Any]:
+        messages = []
+        excluded_senders = {"pepeground_bot", "pepepot", "pepepot_test"}
+        for message in json_data.get("messages", []):
+            if message.get("type") == "message":
+                sender = message.get("from")
+                if sender not in excluded_senders:
+                    text = message.get("text")
+                    if isinstance(text, str) and text.strip():
+                        messages.append({
+                            "id": message.get("id"),
+                            "date": message.get("date"),
+                            "from": sender,
+                            "from_id": message.get("from_id"),
+                            "text": text
+                        })
+        return {"messages": messages}
 
-                if not history.messages:
-                    break
+    def save_extracted_data(self, extracted_data: Dict[str, Any], file_path: str) -> None:
+        with open(file_path, 'w', encoding='utf-8') as f:
+            json.dump(extracted_data, f, ensure_ascii=False, indent=4)
 
-                messages = await self.get_messages(history)
-
-                last_id = history.messages[-1].id
-                total_messages += len(history.messages)
-                print(f"Retrieved {total_messages} messages so far.")
-
-            except errors.FloodWaitError as e:
-                print(f"Flood wait for {e.seconds} seconds")
-                await asyncio.sleep(e.seconds)
-                continue
-
-            except errors.RPCError as e:
-                print(f"An error occurred: {e}")
-                break
-
-        return messages
-
-    async def save_messages(self):
-        messages = await self.get_chat_history(self.chat_id)
-
-        with open('chat_history.csv', 'w', newline='', encoding='utf-8') as csvfile:
-            fieldnames = ['id', 'date', 'sender_username', 'message']
-            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-            writer.writeheader()
-            for message in messages:
-                writer.writerow(message)
-        return f"Messages downloaded: {len(messages)}"
-    
-    def call(self) -> Optional[str]:
-        self.before()
-        return "learn handler called"
+    async def call(self) -> Optional[str]:
+        try:
+            self.before()
+            if not self.document:
+                return "No document attached. Please send a JSON file with the /learn command."
+            return await self.process_json_file()
+        except Exception as e:
+            logger.error("Error in call method: %s", e)
+            return "An unexpected error occurred."

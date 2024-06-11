@@ -5,12 +5,9 @@ This module initializes the Telegram bot application, sets up command and messag
 and defines the Router class responsible for processing incoming updates and routing them
 to the appropriate handlers.
 """
-
 import logging
-import asyncio
-from typing import Type
-from telethon import TelegramClient
-from telegram import Update
+from typing import Optional, Type
+from telegram import Document, Update
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, CallbackContext
 from telegram.error import TelegramError
 from sqlalchemy.exc import OperationalError
@@ -29,19 +26,12 @@ logging.basicConfig(level=logging.DEBUG,
 
 class Router:
     """Router class for handling Telegram bot commands and messages."""
+
     def __init__(self, config: Config, session: Session):
         self.application = Application.builder().token(config.bot.token).build()
         self.session = session
         self.config = config
-        self.client = self.client = TelegramClient(
-            'notbot', api_id=self.config.app.api_id, api_hash=self.config.app.api_hash)
         self._add_handlers()
-        self.loop = asyncio.get_event_loop()
-        self.loop.run_until_complete(self.start_telegram_client())
-
-    async def start_telegram_client(self):
-        """Start the Telegram client."""
-        await self.client.start(phone=self.config.app.phone_number) # type: ignore
 
     def _add_handlers(self):
         """Add command and message handlers to the bot application."""
@@ -63,34 +53,36 @@ class Router:
         self.application.add_handler(MessageHandler(
             filters.TEXT & ~filters.COMMAND, self.handle_message))
 
+        self.application.add_handler(
+            MessageHandler(filters.Document.ALL & filters.CaptionRegex(r'/learn'), self.learn))
+
     async def _send_response(
-        self, context: CallbackContext, chat_id: int, response: str, reply_to_message_id=None):
+            self, context: CallbackContext, chat_id: int, response: str, reply_to_message_id=None):
         """Send a response message to the user."""
         if response:
             await context.bot.send_message(
                 chat_id=chat_id, text=response, reply_to_message_id=reply_to_message_id)
 
     async def _handle_command(
-        self, update: Update, context: CallbackContext,
-        handler_class: Type[GenericHandler]):
+            self, update: Update, context: CallbackContext,
+            handler_class: Type[GenericHandler], document: Optional[Document] = None):
         """Handle commands using the specified handler class."""
         logger.debug("Handling %s command", handler_class.__name__)
-        handler = handler_class(update, self.session, self.config)
-        response = handler.call()
+        if handler_class == learn_handler.LearnHandler:
+            handler = learn_handler.LearnHandler(
+                update, self.session, self.config, document=document)
+        else:
+            handler = handler_class(update, self.session, self.config)
+        response = await handler.call()
         msg = update.message
         if response and msg:
             await self._send_response(context, msg.chat_id, response)
 
     async def learn(self, update: Update, context: CallbackContext):
         """Handle the /learn command."""
-        if self.client:
-            handler = learn_handler.LearnHandler(
-                update, self.session, self.config, self.client)
-            response = handler.call()
-            response = await handler.save_messages()
-            msg = update.message
-            if response and msg:
-                await self._send_response(context, msg.chat_id, response)
+        if update.message:
+            document = update.message.document if update.message.document else None
+        await self._handle_command(update, context, learn_handler.LearnHandler, document=document)
 
     async def repost(self, update: Update, context: CallbackContext):
         """Handle the /repost command."""
@@ -114,7 +106,7 @@ class Router:
                 level = int(args[0])
                 handler = set_gab_handler.SetGabHandler(
                     update, self.session, self.config)
-                response = handler.call(level)
+                response = await handler.call(level)
                 if response:
                     await self._send_response(context, msg.chat_id, response)
             except (IndexError, ValueError):
@@ -145,7 +137,7 @@ class Router:
         if chat_username and msg.chat_id:
             handler = set_repost_chat_handler.SetRepostChatHandler(
                 update, self.session, self.config, chat_member_request)
-            response = handler.call(chat_username)
+            response = await handler.call(chat_username)
             if response:
                 await self._send_response(context, msg.chat_id, response)
         else:
@@ -161,7 +153,7 @@ class Router:
         logger.debug("Handling incoming message")
         handler = message_handler.MessageHandler(
             update, self.session, self.config)
-        response = handler.call()
+        response = await handler.call()
         msg = update.message
         if msg:
             try:

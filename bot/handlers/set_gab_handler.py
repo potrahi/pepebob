@@ -11,7 +11,7 @@ class SetGabHandler(GenericHandler):
     def __init__(self, update: Update, session: Session, config: Config):
         super().__init__(update, session, config)
 
-    def call(self, level: int) -> Optional[str]:
+    async def call(self, level: int) -> Optional[str]:
         self.before()
 
         if level > 50 or level < 0:

@@ -3,7 +3,7 @@ import random
 from abc import ABC, abstractmethod
 from typing import List, Optional
 from sqlalchemy.orm import Session
-from telegram import Update
+from telegram import Document, Update
 
 from core.entities.chat_entity import Chat as ChatEntity
 from core.repositories.chat_repository import ChatRepository
@@ -22,7 +22,7 @@ class GenericHandler(ABC):
         )
     
     @abstractmethod
-    def call(self) -> Optional[str]:
+    async def call(self) -> Optional[str]:
         pass
 
     def before(self):
@@ -77,21 +77,21 @@ class GenericHandler(ABC):
     @property
     def is_command(self) -> bool:
         return self.text is not None and self.text.startswith("/")
-
-    def get_words(self) -> List[str]:
-        if not self.text:
+    
+    def get_words(self, sentense: str = "") -> List[str]:
+        text = sentense if sentense else self.text
+        if not text:
             return []
 
-        text_copy = self.text
         if self.message and self.message.entities:
             for entity in self.message.entities:
                 start = entity.offset
                 end = entity.offset + entity.length
-                text_copy = text_copy[:start] + " " * (end - start) + text_copy[end:]
+                text = text[:start] + " " * (end - start) + text[end:]
 
         return [
             word.lower()
-            for word in text_copy.split()
+            for word in text.split()
             if word and len(word) <= 2000
         ]
 

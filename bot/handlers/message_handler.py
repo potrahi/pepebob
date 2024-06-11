@@ -25,7 +25,7 @@ class MessageHandler(GenericHandler):
             end_sentence=self.config.end_sentence)
         logger.debug("MessageHandler initialized")
 
-    def call(self) -> Optional[str]:
+    async def call(self) -> Optional[str]:
         self.before()
 
         if not self.has_text or self.is_edition:

@@ -18,7 +18,7 @@ class CoolStoryHandler(GenericHandler):
             end_sentence=self.config.end_sentence, 
             sentences=50)
 
-    def call(self) -> Optional[str]:
+    async def call(self) -> Optional[str]:
         self.before()
         if self.story_service:
             return self.story_service.generate()
