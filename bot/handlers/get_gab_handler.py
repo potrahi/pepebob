@@ -1,15 +1,35 @@
+"""
+This module contains the GetGabHandler class, which handles the 'get gab' requests
+from the bot, providing information about the 'pizdlivost' level.
+"""
+
 from typing import Optional
-
-from sqlalchemy.orm import Session
-from telegram import Update
-
 from bot.handlers.generic_handler import GenericHandler
-from config import Config
+
 
 class GetGabHandler(GenericHandler):
-    def __init__(self, update: Update, session: Session, config: Config):
-        super().__init__(update, session, config)
+    """
+    GetGabHandler processes the 'get gab' request and responds with the pizdlivost level.
+    """
 
-    async def call(self) -> Optional[str]:
+    async def call(self, *args, **kwargs) -> Optional[str]:
+        """
+        Execute the main logic of the handler.
+
+        This method performs the following steps:
+        1. Calls the `before` method to execute any preliminary actions before handling the update.
+        2. Retrieves the 'pizdlivost' level, represented by the `random_chance` attribute, 
+            from the chat object.
+        3. Returns a formatted response string indicating the 'pizdlivost' level.
+
+        Args:
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
+
+        Returns:
+            Optional[str]: A formatted string indicating the 'pizdlivost' level, or None if 
+                not available.
+        """
         self.before()
-        return f"Pizdlivost level is on {self.chat.random_chance}"
+        pizdlivost_level = self.chat.random_chance
+        return f"Pizdlivost level is on {pizdlivost_level}"

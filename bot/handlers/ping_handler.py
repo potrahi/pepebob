@@ -1,15 +1,34 @@
+"""
+This module defines the PingHandler class, which handles the ping command
+and responds with a pong message.
+"""
+
 from typing import Optional
-
-from sqlalchemy.orm import Session
-from telegram import Update
-
 from bot.handlers.generic_handler import GenericHandler
-from config import Config
 
 class PingHandler(GenericHandler):
-    def __init__(self, update: Update, session: Session,  config: Config):
-        super().__init__(update, session, config)
+    """
+    Handler class responsible for responding to ping commands.
 
-    async def call(self) -> Optional[str]:
+    Methods:
+        call: Asynchronously returns a pong message.
+    """
+
+    async def call(self, *args, **kwargs) -> Optional[str]:
+        """
+        Asynchronously returns a pong message in response to a ping command.
+
+        This method performs the following steps:
+        1. Calls the `before` method to execute any preliminary actions before 
+            handling the update.
+        2. Returns a simple string "Pong." indicating a successful ping response.
+
+        Args:
+            *args: Variable length argument list.
+            **kwargs: Arbitrary keyword arguments.
+
+        Returns:
+            Optional[str]: A string "Pong." indicating a successful ping response.
+        """
         self.before()
         return "Pong."
