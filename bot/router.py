@@ -16,8 +16,8 @@ from sqlalchemy.orm import Session
 from bot.handlers.generic_handler import GenericHandler
 from bot.handlers import (
     cool_story_handler, get_gab_handler,
-    get_stats_handler, message_handler, ping_handler,
-    set_gab_handler, learn_handler)
+    get_stats_handler, import_history_handler, message_handler, ping_handler,
+    set_gab_handler)
 from config import Config
 
 logger = logging.getLogger(__name__)
@@ -37,12 +37,12 @@ class Router:
     def _add_handlers(self):
         """Add command and message handlers to the bot application."""
         command_handlers = {
-            "get_stats": get_stats_handler.GetStatsHandler,
             "cool_story": cool_story_handler.CoolStoryHandler,
-            "set_gab": self.set_gab,
+            "import_history": self.import_history,
             "get_gab": get_gab_handler.GetGabHandler,
+            "get_stats": get_stats_handler.GetStatsHandler,
             "ping": ping_handler.PingHandler,
-            "learn": self.learn
+            "set_gab": self.set_gab
         }
 
         for command, handler in command_handlers.items():
@@ -52,7 +52,7 @@ class Router:
         self.application.add_handler(MessageHandler(
             filters.TEXT & ~filters.COMMAND, self.handle_message))
         self.application.add_handler(MessageHandler(
-            filters.Document.ALL & filters.CaptionRegex(r'/learn'), self.learn))
+            filters.Document.ALL & filters.CaptionRegex(r'/import_history'), self.import_history))
 
     def _create_command_handler(self, handler_class: Type[GenericHandler]):
         """Create a command handler for a given handler class."""
@@ -75,7 +75,7 @@ class Router:
         handler = (
             handler_class(update, self.session, self.config,
                           document)  # type: ignore
-            if handler_class == learn_handler.LearnHandler
+            if handler_class == import_history_handler.ImportHistoryHandler
             else handler_class(update, self.session, self.config)
         )
         response = await handler.call()
@@ -84,10 +84,12 @@ class Router:
             await self._send_response(
                 context, msg.chat_id, response, reply_to_message_id=msg.message_id)
 
-    async def learn(self, update: Update, context: CallbackContext):
-        """Handle the /learn command."""
+    async def import_history(self, update: Update, context: CallbackContext):
+        """Handle the /import_history command."""
         document = update.message.document if update.message else None
-        await self._handle_command(update, context, learn_handler.LearnHandler, document=document)
+        await self._handle_command(
+            update, context, import_history_handler.ImportHistoryHandler, document=document
+        )
 
     async def set_gab(self, update: Update, context: CallbackContext):
         """Handle the /set_gab command."""

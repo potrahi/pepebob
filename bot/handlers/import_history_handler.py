@@ -1,7 +1,7 @@
 """
-learn_handler.py
+import_history_handler.py
 
-This module defines the LearnHandler class responsible for processing JSON files
+This module defines the ImportHistoryHandler class responsible for processing JSON files
 containing messages, extracting relevant data, and pushing it to a learn queue.
 """
 
@@ -19,9 +19,9 @@ from core.repositories.learn_queue_repository import LearnQueueRepository
 logger = logging.getLogger(__name__)
 
 
-class LearnHandler(GenericHandler):
+class ImportHistoryHandler(GenericHandler):
     """
-    LearnHandler is responsible for handling the /learn command. It processes
+    ImportHistoryHandler is responsible for handling the /import_history command. It processes
     a JSON file sent by the user, extracts messages, and pushes the words to a
     learning queue.
     """
@@ -30,7 +30,7 @@ class LearnHandler(GenericHandler):
     def __init__(self, update: Update, session: Session,
                  config: Config, document: Document):
         """
-        Initializes the LearnHandler instance.
+        Initializes the ImportHistoryHandler instance.
 
         Args:
             update (Update): The Telegram update instance.
