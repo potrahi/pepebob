@@ -4,3 +4,7 @@ venv/
 .DS_Store
 .env
 *.session.sql
+*.session
+*session-journal
+*.csv
+*.json

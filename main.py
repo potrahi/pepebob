@@ -6,6 +6,7 @@ from datetime import datetime
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 
+from bot.clear_queue import CleanQueue
 from bot.router import Router
 from bot.learn import Learn
 from bot.clear_up import CleanUp
@@ -29,13 +30,14 @@ def set_default_timezone():
     now = datetime.now(utc)
     logger.info(f"Current time in UTC: {now}")
 
-config = Config()
+if sys.argv[1] != 'learn':
+    config = Config()
 
-# Database setup
-DATABASE_URL = config.db.url
-logger.debug(f"Database URI: {DATABASE_URL}")
-engine = create_engine(DATABASE_URL)
-Session = sessionmaker(bind=engine)
+    # Database setup
+    DATABASE_URL = config.db.url
+    logger.debug(f"Database URI: {DATABASE_URL}")
+    engine = create_engine(DATABASE_URL)
+    Session = sessionmaker(bind=engine)
 
 def check_db_connection(engine):
     logger.debug("Checking database connection.")
@@ -53,22 +55,26 @@ def main():
         sys.exit(1)
 
     set_default_timezone()
-    check_db_connection(engine)
+    if sys.argv[1] != 'learn':
+        check_db_connection(engine)
+        session = Session()
 
     arg = sys.argv[1]
     logger.debug(f"Application argument: {arg}")
-    session = Session()
 
     try:
         if arg == "learn":
             logger.info("Running learn task")
-            Learn.run(session)
+            Learn.run()
         elif arg == "cleanup":
             logger.info("Running cleanup task")
             CleanUp.run(session)
+        elif arg == "clearqueue":
+            logger.info("Running clean learn queue task")
+            CleanQueue.run()
         elif arg == "bot":
             logger.info("Running bot")
-            router = Router(config.bot.telegram_token, session)
+            router = Router(config, session)
             router.run()
         else:
             logger.error(f"Unknown application argument: {arg}")
@@ -76,8 +82,9 @@ def main():
     except Exception as e:
         logger.error(f"An error occurred while running the '{arg}' task: {e}")
     finally:
-        session.close()
-        logger.debug("Database session closed.")
+        if sys.argv[1] != 'learn':
+            session.close()
+            logger.debug("Database session closed.")
 
 if __name__ == "__main__":
     logger.debug("Starting the application.")

@@ -6,15 +6,15 @@ from core.entities.pair_entity import Pair as PairEntity
 from core.repositories.pair_repository import PairRepository
 from core.repositories.reply_repository import ReplyRepository
 from core.repositories.word_repository import WordRepository
-from config import Config
 
 class StoryService:
-    def __init__(self, words: List[str], context: List[str], chat_id: int, session: Session, sentences: Optional[int] = None):
-        self.end_sentence = Config().end_sentence
+    def __init__(self, words: List[str], context: List[str], chat_id: int, 
+                 session: Session, end_sentence: List[str], sentences: Optional[int] = None):
         self.words = words
         self.context = context
         self.chat_id = chat_id
         self.session = session
+        self.end_sentence = end_sentence
         self.sentences = sentences
         self.current_sentences = []
         self.current_word_ids = []

@@ -1,5 +1,5 @@
-from typing import List, Optional
 import json
+from typing import List, Optional
 from pymongo import MongoClient
 from config import Config
 
@@ -17,10 +17,15 @@ class LearnItem:
         return LearnItem(json_data['message'], json_data['chat_id'])
 
 class LearnQueueRepository:
+    _client = None
+    
     def __init__(self):
-        self.config = Config()
-        self.client = MongoClient(host=self.config.cache.host, port=self.config.cache.port)
-        self.db = self.client[self.config.cache.name]
+        if not LearnQueueRepository._client:
+            config = Config()
+            LearnQueueRepository._client = MongoClient(host=config.cache.host, port=config.cache.port)
+        self.client = LearnQueueRepository._client
+        config = Config()
+        self.db = self.client[config.cache.name] # pylint: disable=unsubscriptable-object
         self.collection = self.db["learn_queue"]
 
     def push(self, message: List[str], chat_id: int) -> None:
@@ -35,3 +40,7 @@ class LearnQueueRepository:
             except (json.JSONDecodeError, KeyError) as e:
                 return None
         return None
+
+    def clear(self):
+        """Clear all records in the learn_queue collection."""
+        self.collection.delete_many({})

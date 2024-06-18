@@ -6,16 +6,16 @@ from telegram import Update
 
 from core.repositories.chat_repository import ChatRepository
 from bot.handlers.generic_handler import GenericHandler
-
+from config import Config
 
 class SetRepostChatHandler(GenericHandler):
     ADMIN_STATUSES = ["creator", "administrator"]
 
-    def __init__(self, update: Update, chat_member_request_url: Optional[str], session: Session):
-        super().__init__(update, session)
+    def __init__(self, update: Update,session: Session, config: Config, chat_member_request_url: Optional[str]):
+        super().__init__(update, session, config)
         self.chat_member_request_url = chat_member_request_url
 
-    def call(self, chat_username: str) -> Optional[str]:
+    async def call(self, chat_username: str) -> Optional[str]:
         self.before()
 
         if self.can_set_repost_chat():

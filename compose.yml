@@ -10,6 +10,7 @@ services:
     depends_on:
       - postgres
       - mongo
+    command: ["python", "main.py", "bot"]
 
   postgres:
     image: postgres:latest

@@ -3,19 +3,18 @@ import random
 from abc import ABC, abstractmethod
 from typing import List, Optional
 from sqlalchemy.orm import Session
-from telegram import Update
+from telegram import Document, Update
 
 from core.entities.chat_entity import Chat as ChatEntity
 from core.repositories.chat_repository import ChatRepository
 from core.repositories.context_repository import ContextRepository
-
 from config import Config
 
 class GenericHandler(ABC):
-    def __init__(self, update: Update, session: Session):
+    def __init__(self, update: Update, session: Session, config: Config):
         self.message = update.message if update.message else None
         self.session = session
-        self.config = Config()
+        self.config = config
         self.context_repository = ContextRepository(
             host=self.config.cache.host,
             port=self.config.cache.port,
@@ -23,7 +22,7 @@ class GenericHandler(ABC):
         )
     
     @abstractmethod
-    def call(self):
+    async def call(self) -> Optional[str]:
         pass
 
     def before(self):
@@ -78,21 +77,21 @@ class GenericHandler(ABC):
     @property
     def is_command(self) -> bool:
         return self.text is not None and self.text.startswith("/")
-
-    def get_words(self) -> List[str]:
-        if not self.text:
+    
+    def get_words(self, sentense: str = "") -> List[str]:
+        text = sentense if sentense else self.text
+        if not text:
             return []
 
-        text_copy = self.text
         if self.message and self.message.entities:
             for entity in self.message.entities:
                 start = entity.offset
                 end = entity.offset + entity.length
-                text_copy = text_copy[:start] + " " * (end - start) + text_copy[end:]
+                text = text[:start] + " " * (end - start) + text[end:]
 
         return [
             word.lower()
-            for word in text_copy.split()
+            for word in text.split()
             if word and len(word) <= 2000
         ]
 
