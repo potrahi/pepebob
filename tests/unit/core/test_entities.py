@@ -13,10 +13,9 @@ def test_create_chat(dbsession):
         telegram_id=123456789,
         chat_type=1,
         random_chance=10,
-        created_at='2023-01-01 00:00:00',
-        updated_at='2023-01-01 00:00:00',
-        name='Test Chat',
-        repost_chat_username='test_repost'
+        created_at=creation_time,
+        updated_at=update_time,
+        name='Test Chat'
     )
     dbsession.add(chat)
     dbsession.commit()
@@ -31,7 +30,6 @@ def test_create_chat(dbsession):
     assert retrieved_chat.created_at == creation_time
     assert retrieved_chat.updated_at == update_time
     assert retrieved_chat.name == 'Test Chat'
-    assert retrieved_chat.repost_chat_username == 'test_repost'
 
 
 def test_create_word(dbsession):
@@ -46,14 +44,16 @@ def test_create_word(dbsession):
 
 
 def test_create_pair(dbsession):
+    creation_time = datetime(2023, 2, 1, 0, 0, 0)
+    update_time = datetime(2023, 2, 1, 0, 0, 0)
+
     chat = Chat(
         telegram_id=987654321,
         chat_type=1,
         random_chance=10,
-        created_at='2023-02-01 00:00:00',
-        updated_at='2023-02-01 00:00:00',
-        name='Another Chat',
-        repost_chat_username='another_username'
+        created_at=creation_time,
+        updated_at=update_time,
+        name='Another Chat'
     )
     word1 = Word(word='first')
     word2 = Word(word='second')
@@ -87,14 +87,16 @@ def test_create_pair(dbsession):
 
 
 def test_create_reply(dbsession):
+    creation_time = datetime(2023, 3, 1, 0, 0, 0)
+    update_time = datetime(2023, 3, 1, 0, 0, 0)
+
     chat = Chat(
         telegram_id=123123123,
         chat_type=1,
         random_chance=10,
-        created_at=datetime.utcnow(),
-        updated_at=datetime.utcnow(),
-        name='Reply Chat',
-        repost_chat_username='reply_username'
+        created_at=creation_time,
+        updated_at=update_time,
+        name='Reply Chat'
     )
     word1 = Word(word='hello')
     word2 = Word(word='world')
@@ -116,7 +118,15 @@ def test_create_reply(dbsession):
     )
     dbsession.add(reply)
     dbsession.commit()
+
+    retrieved_reply = dbsession.query(
+        Reply).filter_by(pair_id=pair.id, word_id=word1.id).one()
+
     assert reply.id is not None
+    assert retrieved_reply.pair_id == pair.id
+    assert retrieved_reply.word_id == word1.id
+    assert retrieved_reply.word_id != word2.id
+    assert retrieved_reply.count == 1
 
 
 def test_relationships(dbsession):
@@ -126,8 +136,7 @@ def test_relationships(dbsession):
         random_chance=10,
         created_at=datetime.utcnow(),
         updated_at=datetime.utcnow(),
-        name='Relationship Chat',
-        repost_chat_username='relationship_username'
+        name='Relationship Chat'
     )
     word1 = Word(word='alpha')
     word2 = Word(word='beta')

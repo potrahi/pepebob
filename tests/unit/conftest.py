@@ -24,7 +24,8 @@ DATABASE_URL = (
 
 @pytest.fixture(scope='module')
 def engine():
-    return create_engine(DATABASE_URL)
+    return create_engine("sqlite:///:memory:")
+    # return create_engine(DATABASE_URL)
 
 
 @pytest.fixture(scope='module')

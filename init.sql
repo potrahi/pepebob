@@ -60,12 +60,3 @@ ALTER TABLE pairs ADD CONSTRAINT chat_id_fk FOREIGN KEY (chat_id) REFERENCES cha
 ALTER TABLE pairs ADD COLUMN IF NOT EXISTS updated_at timestamp without time zone;
 UPDATE pairs SET updated_at = now() WHERE updated_at IS NULL;
 ALTER TABLE pairs ALTER COLUMN updated_at SET NOT NULL;
-
-CREATE TABLE IF NOT EXISTS subscriptions(
-    id SERIAL PRIMARY KEY NOT NULL,
-    chat_id bigint NOT NULL,
-    name character varying NOT NULL,
-    since_id bigint
-);
-
-ALTER TABLE chats ADD COLUMN IF NOT EXISTS repost_chat_username character varying;

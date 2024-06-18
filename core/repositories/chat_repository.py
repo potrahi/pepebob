@@ -100,7 +100,9 @@ class ChatRepository:
         )
         session.commit()
 
-    def _create(self, session: Session, telegram_id: int, name: str, chat_type: str) -> Chat:
+    def _create(
+            self, session: Session, telegram_id: int, name: str,
+            chat_type: str) -> Chat:
         """
         Create a new Chat entity.
 
@@ -120,6 +122,12 @@ class ChatRepository:
             "Creating chat with telegram_id=%d, name=%s, chat_type=%s",
             telegram_id, name, chat_type
         )
+
+        existing_chat = self._get_by_telegram_id(session, telegram_id)
+        if existing_chat:
+            raise ValueError(
+                f"Chat with telegram_id {telegram_id} already exists")
+
         session.execute(
             insert(Chat)
             .values(
