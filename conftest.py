@@ -11,6 +11,7 @@ from core.enums.chat_types import ChatType
 from core.repositories.chat_repository import ChatRepository
 from core.repositories.pair_repository import PairRepository
 from core.repositories.reply_repository import ReplyRepository
+from core.repositories.word_repository import WordRepository
 
 
 @pytest.fixture(scope='module')
@@ -38,6 +39,14 @@ def dbsession(engine: Engine, tables):
 
 
 @pytest.fixture
+def chat_repo():
+    """
+    Fixture to provide a ChatRepository instance.
+    """
+    return ChatRepository()
+
+
+@pytest.fixture
 def pair_repo():
     """
     Fixture to provide a PairRepository instance.
@@ -46,13 +55,19 @@ def pair_repo():
 
 
 @pytest.fixture
-def chat_repo():
-    return ChatRepository()
+def reply_repo():
+    """
+    Fixture to provide a ReplyRepository instance.
+    """
+    return ReplyRepository()
 
 
 @pytest.fixture
-def reply_repo():
-    return ReplyRepository()
+def word_repo():
+    """
+    Fixture to provide a WordRepository instance.
+    """
+    return WordRepository()
 
 
 @pytest.fixture

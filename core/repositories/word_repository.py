@@ -37,16 +37,34 @@ class WordRepository:
             Optional[int]: The ID of the created WordEntity, or None if creation failed.
         """
         logger.debug("Creating WordEntity with word: %s", word)
-        stmt = insert(WordEntity).values(word=word).returning(WordEntity.id)
-        try:
-            result = session.execute(stmt).scalar()
-            session.commit()
-            logger.debug("Created WordEntity with ID: %d", result)
-            return result
-        except IntegrityError as e:
-            logger.error("IntegrityError: %s", e)
-            session.rollback()
-            return None
+        stmt = insert(WordEntity).values(word=word)
+
+        assert session.bind
+
+        if session.bind.dialect.name == 'sqlite':
+            try:
+                session.execute(stmt)
+                session.commit()
+                result = session.execute(
+                    select(WordEntity.id).where(WordEntity.word == word)
+                ).scalar()
+                logger.debug("Created WordEntity with ID: %d", result)
+                return result
+            except IntegrityError as e:
+                logger.error("IntegrityError: %s", e)
+                session.rollback()
+                return None
+        else:
+            stmt = stmt.returning(WordEntity.id)
+            try:
+                result = session.execute(stmt).scalar()
+                session.commit()
+                logger.debug("Created WordEntity with ID: %d", result)
+                return result
+            except IntegrityError as e:
+                logger.error("IntegrityError: %s", e)
+                session.rollback()
+                return None
 
     def get_by_words(self, session: Session, words: List[str]) -> List[WordEntity]:
         """
