@@ -6,7 +6,7 @@ PairRepository, and ReplyRepository to store and retrieve data.
 
 from typing import List, Optional, Dict, Tuple
 from sqlalchemy.orm import Session
-from core.entities.word_entity import Word as WordEntity
+from core.entities.word_entity import Word
 from core.repositories.pair_repository import PairRepository
 from core.repositories.reply_repository import ReplyRepository
 from core.repositories.word_repository import WordRepository
@@ -80,10 +80,11 @@ class LearnService:
         """
         preloaded_words = self._preload_words()
         pair_ids = []
+        num_words = len(new_words)
 
-        while new_words:
-            trigram_map, _ = self._map_trigram(new_words, preloaded_words)
-            new_words = new_words[1:]
+        for i in range(num_words - 2):
+            trigram_map, _ = self._map_trigram(
+                new_words[i:i+3], preloaded_words)
 
             pair = self.pair_repo.get_pair_or_create_by(
                 self.session, self.chat_id, trigram_map.get(0), trigram_map.get(1))
@@ -93,24 +94,29 @@ class LearnService:
 
         return pair_ids
 
-    def _preload_words(self) -> Dict[str, WordEntity]:
+    def _preload_words(self) -> Dict[str, Word]:
         """
         Preload words from the database into a dictionary.
 
         Returns:
-            Dict[str, WordEntity]: Dictionary of preloaded words.
+            Dict[str, Word]: Dictionary of preloaded words.
         """
-        return {word.word: word for word in self.word_repo.get_by_words(self.session, self.words)}
+        # Fetch words from the repository
+        words = self.word_repo.get_by_words(self.session, self.words)
+
+        # Create a dictionary mapping word strings to Word objects
+        preloaded_words = {word.word: word for word in words}
+        return preloaded_words
 
     def _map_trigram(self, new_words: List[Optional[str]],
-                     preloaded_words: Dict[str, WordEntity]
+                     preloaded_words: Dict[str, Word]
                      ) -> Tuple[Dict[int, int], List[Optional[str]]]:
         """
         Map a trigram of words to their IDs.
 
         Args:
             new_words (List[Optional[str]]): The list of new words.
-            preloaded_words (Dict[str, WordEntity]): Dictionary of preloaded words.
+            preloaded_words (Dict[str, Word]): Dictionary of preloaded words.
 
         Returns:
             Tuple[Dict[int, int], List[Optional[str]]]: The trigram map and the trigram.

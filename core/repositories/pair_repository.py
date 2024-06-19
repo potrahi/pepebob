@@ -73,8 +73,6 @@ class PairRepository:
         Raises:
             ValueError: If the pair could not be created.
         """
-        if first_id is None or second_id is None:
-            raise ValueError("first_id and second_id must not be None")
 
         logger.debug("Creating pair for chat_id: %d, first_id: %s, second_id: %s",
                      chat_id, first_id, second_id)

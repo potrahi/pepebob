@@ -30,15 +30,6 @@ def test_get_pair_or_create_by(
     assert result_existing.id == result.id
 
 
-def test_get_pair_or_create_by_failure(
-        pair_repo: PairRepository, chat: Chat, word2: Word, dbsession: Session):
-    """
-    Test that get_pair_or_create_by raises a ValueError when first_id is None.
-    """
-    with pytest.raises(ValueError, match="first_id and second_id must not be None"):
-        pair_repo.get_pair_or_create_by(dbsession, chat.id, None, word2.id)
-
-
 def test_has_with_word_id(pair_repo: PairRepository, pair: Pair, dbsession: Session):
     """
     Test the has_with_word_id method to check if a pair exists with the given word ID.

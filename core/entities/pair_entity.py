@@ -35,9 +35,9 @@ class Pair(Base):
     chat_id: Mapped[int] = mapped_column(
         Integer, ForeignKey('chats.id', ondelete='CASCADE'), nullable=False)
     first_id: Mapped[int] = mapped_column(
-        Integer, ForeignKey('words.id', ondelete='CASCADE'))
+        Integer, ForeignKey('words.id', ondelete='CASCADE'), nullable=True)
     second_id: Mapped[int] = mapped_column(
-        Integer, ForeignKey('words.id', ondelete='CASCADE'))
+        Integer, ForeignKey('words.id', ondelete='CASCADE'), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         TIMESTAMP, nullable=False, server_default=func.now())  # pylint: disable=not-callable
     updated_at: Mapped[datetime] = mapped_column(

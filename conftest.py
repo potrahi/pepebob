@@ -12,6 +12,7 @@ from core.repositories.chat_repository import ChatRepository
 from core.repositories.pair_repository import PairRepository
 from core.repositories.reply_repository import ReplyRepository
 from core.repositories.word_repository import WordRepository
+from core.services.learn_service import LearnService
 
 
 @pytest.fixture(scope='module')
@@ -39,7 +40,7 @@ def dbsession(engine: Engine, tables):
 
 
 @pytest.fixture
-def chat_repo():
+def chat_repo() -> ChatRepository:
     """
     Fixture to provide a ChatRepository instance.
     """
@@ -47,7 +48,7 @@ def chat_repo():
 
 
 @pytest.fixture
-def pair_repo():
+def pair_repo() -> PairRepository:
     """
     Fixture to provide a PairRepository instance.
     """
@@ -55,7 +56,7 @@ def pair_repo():
 
 
 @pytest.fixture
-def reply_repo():
+def reply_repo() -> ReplyRepository:
     """
     Fixture to provide a ReplyRepository instance.
     """
@@ -63,7 +64,7 @@ def reply_repo():
 
 
 @pytest.fixture
-def word_repo():
+def word_repo() -> WordRepository:
     """
     Fixture to provide a WordRepository instance.
     """
@@ -122,3 +123,12 @@ def reply(dbsession: Session, pair: Pair, word1: Word) -> Reply:
     dbsession.add(reply_entity)
     dbsession.commit()
     return reply_entity
+
+
+@pytest.fixture
+def learn_service(dbsession: Session, word1: Word, word2: Word, chat: Chat) -> LearnService:
+    """
+    Fixture to provide a LearnService instance.
+    """
+    words = [word1.word, word2.word]
+    return LearnService(words=words, chat_id=chat.id, session=dbsession)

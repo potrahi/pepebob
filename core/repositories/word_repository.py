@@ -11,7 +11,7 @@ from sqlalchemy import select, insert
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 
-from core.entities.word_entity import Word as WordEntity
+from core.entities.word_entity import Word
 
 # Configure logger
 logger = logging.getLogger(__name__)
@@ -27,17 +27,17 @@ class WordRepository:
 
     def _create(self, session: Session, word: str) -> Optional[int]:
         """
-        Create a new WordEntity with the given word.
+        Create a new Word with the given word.
 
         Args:
             session (Session): SQLAlchemy session.
             word (str): The word to create.
 
         Returns:
-            Optional[int]: The ID of the created WordEntity, or None if creation failed.
+            Optional[int]: The ID of the created Word, or None if creation failed.
         """
-        logger.debug("Creating WordEntity with word: %s", word)
-        stmt = insert(WordEntity).values(word=word)
+        logger.debug("Creating Word with word: %s", word)
+        stmt = insert(Word).values(word=word)
 
         assert session.bind
 
@@ -46,27 +46,27 @@ class WordRepository:
                 session.execute(stmt)
                 session.commit()
                 result = session.execute(
-                    select(WordEntity.id).where(WordEntity.word == word)
+                    select(Word.id).where(Word.word == word)
                 ).scalar()
-                logger.debug("Created WordEntity with ID: %d", result)
+                logger.debug("Created Word with ID: %d", result)
                 return result
             except IntegrityError as e:
                 logger.error("IntegrityError: %s", e)
                 session.rollback()
                 return None
         else:
-            stmt = stmt.returning(WordEntity.id)
+            stmt = stmt.returning(Word.id)
             try:
                 result = session.execute(stmt).scalar()
                 session.commit()
-                logger.debug("Created WordEntity with ID: %d", result)
+                logger.debug("Created Word with ID: %d", result)
                 return result
             except IntegrityError as e:
                 logger.error("IntegrityError: %s", e)
                 session.rollback()
                 return None
 
-    def get_by_words(self, session: Session, words: List[str]) -> List[WordEntity]:
+    def get_by_words(self, session: Session, words: List[str]) -> List[Word]:
         """
         Retrieve WordEntities by a list of words.
 
@@ -75,31 +75,31 @@ class WordRepository:
             words (List[str]): List of words to retrieve.
 
         Returns:
-            List[WordEntity]: List of found WordEntities.
+            List[Word]: List of found WordEntities.
         """
         logger.debug("Getting WordEntities by words: %s", words)
         result = session.execute(
-            select(WordEntity).where(WordEntity.word.in_(words))
+            select(Word).where(Word.word.in_(words))
         ).scalars().all()
         logger.debug("Found WordEntities: %s", result)
         return list(result)
 
-    def get_word_by_id(self, session: Session, word_id: int) -> Optional[WordEntity]:
+    def get_word_by_id(self, session: Session, word_id: int) -> Optional[Word]:
         """
-        Retrieve a WordEntity by its ID.
+        Retrieve a Word by its ID.
 
         Args:
             session (Session): SQLAlchemy session.
             word_id (int): ID of the word to retrieve.
 
         Returns:
-            Optional[WordEntity]: The found WordEntity, or None if not found.
+            Optional[Word]: The found Word, or None if not found.
         """
-        logger.debug("Getting WordEntity by ID: %d", word_id)
+        logger.debug("Getting Word by ID: %d", word_id)
         result = session.execute(
-            select(WordEntity).where(WordEntity.id == word_id).limit(1)
+            select(Word).where(Word.id == word_id).limit(1)
         ).scalar()
-        logger.debug("Found WordEntity: %s", result)
+        logger.debug("Found Word: %s", result)
         return result
 
     def learn_words(self, session: Session, words: List[str]) -> None:
