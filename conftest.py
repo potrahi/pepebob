@@ -10,6 +10,7 @@ from core.entities.word_entity import Word
 from core.enums.chat_types import ChatType
 from core.repositories.chat_repository import ChatRepository
 from core.repositories.pair_repository import PairRepository
+from core.repositories.reply_repository import ReplyRepository
 
 
 @pytest.fixture(scope='module')
@@ -47,6 +48,11 @@ def pair_repo():
 @pytest.fixture
 def chat_repo():
     return ChatRepository()
+
+
+@pytest.fixture
+def reply_repo():
+    return ReplyRepository()
 
 
 @pytest.fixture
