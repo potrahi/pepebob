@@ -3,7 +3,7 @@ This module defines the Pair entity class for the database model.
 The Pair class represents a pair of words associated with a chat,
 and is mapped to the 'pairs' table in the database.
 """
-
+from datetime import datetime
 from sqlalchemy import Integer, ForeignKey, TIMESTAMP, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -38,9 +38,9 @@ class Pair(Base):
         Integer, ForeignKey('words.id', ondelete='CASCADE'))
     second_id: Mapped[int] = mapped_column(
         Integer, ForeignKey('words.id', ondelete='CASCADE'))
-    created_at: Mapped[str] = mapped_column(
+    created_at: Mapped[datetime] = mapped_column(
         TIMESTAMP, nullable=False, server_default=func.now())  # pylint: disable=not-callable
-    updated_at: Mapped[str] = mapped_column(
+    updated_at: Mapped[datetime] = mapped_column(
         TIMESTAMP, nullable=False, server_default=func.now(), onupdate=func.now())  # pylint: disable=not-callable
 
     chat = relationship('Chat', back_populates='pairs')
