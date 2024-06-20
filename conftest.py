@@ -165,14 +165,9 @@ def story_service(word1: Word, word2: Word, chat: Chat, dbsession: Session) -> S
     )
 
 
-class TestGenericHandler(GenericHandler):
-    async def call(self, *args, **kwargs):
-        return "Called"
-
-
 @pytest.fixture
 def mock_update():
-    user = User(id=123, first_name='Test', is_bot=False)
+    user = User(id=123, first_name='Test', is_bot=False, username='testuser')
     telegram_chat = TelegramChat(id=456, type='private', title='Test Chat')
     message = Message(message_id=1, date=datetime.now(),
                       chat=telegram_chat, text="Test message", from_user=user)
@@ -191,13 +186,7 @@ def mock_config():
     config.bot.name = "TestBot"
     config.bot.anchors = ["hello", "test"]
     config.cache.host = "localhost"
-    config.cache.port = 6379
+    config.cache.port = 27017
     config.cache.name = "test_cache"
+    config.end_sentence = [".", "!", "?"]
     return config
-
-
-@pytest.fixture
-def handler(mock_update: Update, mock_session: MagicMock, mock_config: Config):
-    generic_handler = TestGenericHandler(
-        update=mock_update, session=mock_session, config=mock_config)
-    return generic_handler

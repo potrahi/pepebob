@@ -32,16 +32,7 @@ class CoolStoryHandler(GenericHandler):
             config (Config): Configuration object.
         """
         super().__init__(update, session, config)
-        self.story_service = self._initialize_story_service()
-
-    def _initialize_story_service(self) -> StoryService:
-        """
-        Initializes the StoryService with the necessary parameters.
-
-        Returns:
-            StoryService: An instance of StoryService configured with the necessary parameters.
-        """
-        return StoryService(
+        self.story_service = StoryService(
             words=self.words,
             context=self.full_context,
             chat_id=self.chat.id,

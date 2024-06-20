@@ -1,10 +1,24 @@
 from datetime import datetime
 from unittest.mock import MagicMock, Mock, PropertyMock, patch
+import pytest
 from telegram import (
-    Message, MessageEntity, User, Chat as TelegramChat)
-from core.repositories.chat_repository import ChatRepository
+    Message, MessageEntity, Update, User, Chat as TelegramChat
+)
+from bot.handlers.generic_handler import GenericHandler
+from config import Config
 from core.entities.chat_entity import Chat
-from conftest import TestGenericHandler
+
+
+class TestGenericHandler(GenericHandler):
+    async def call(self, *args, **kwargs):
+        return "Called"
+
+
+@pytest.fixture
+def handler(mock_update: Update, mock_session: MagicMock, mock_config: Config):
+    generic_handler = TestGenericHandler(
+        update=mock_update, session=mock_session, config=mock_config)
+    return generic_handler
 
 
 def test_is_chat_changed(handler: TestGenericHandler):
@@ -126,8 +140,9 @@ def test_get_words(handler: TestGenericHandler):
 
 
 def test_chat(handler: TestGenericHandler):
-    chat_entity = Chat(id=1, telegram_id=456, chat_type="chat", name="Test Chat")
-    
+    chat_entity = Chat(id=1, telegram_id=456,
+                       chat_type="chat", name="Test Chat")
+
     with patch('core.repositories.chat_repository.ChatRepository.get_or_create_by', return_value=chat_entity):
         assert handler.chat == chat_entity
 
@@ -150,15 +165,15 @@ def test_chat_name(handler: TestGenericHandler):
 
 def test_from_username(handler: TestGenericHandler):
     assert handler.message
-    
+
     # Create a mock user
     user_mock = Mock(spec=User)
     type(user_mock).username = PropertyMock(return_value="Test")
-    
+
     # Create a mock message
     message_mock = Mock(spec=Message)
     type(message_mock).from_user = PropertyMock(return_value=user_mock)
-    
+
     handler.message = message_mock
 
     # Assert that from_username returns "Test"
@@ -169,7 +184,7 @@ def test_get_context(handler: TestGenericHandler):
     handler.context_repository.get_context = MagicMock(
         return_value=["context1", "context2"]
     )
-    
+
     with patch('random.sample', return_value=["context1", "context2"]):
         context = handler.get_context(2)
         assert context == ["context1", "context2"]
@@ -179,7 +194,7 @@ def test_context(handler: TestGenericHandler):
     handler.context_repository.get_context = MagicMock(
         return_value=["context1", "context2"]
     )
-    
+
     with patch('random.sample', return_value=["context1", "context2"]):
         context = handler.context
         assert context == ["context1", "context2"]
@@ -189,7 +204,7 @@ def test_full_context(handler: TestGenericHandler):
     handler.context_repository.get_context = MagicMock(
         return_value=["context1", "context2"]
     )
-    
+
     with patch('random.sample', return_value=["context1", "context2"]):
         full_context = handler.full_context
         assert full_context == ["context1", "context2"]
