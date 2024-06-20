@@ -7,7 +7,7 @@ to the appropriate handlers.
 """
 
 import logging
-from typing import Optional, Type
+from typing import Optional, Type, Union, Callable
 from telegram import Document, Update
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, CallbackContext
 from telegram.error import TelegramError
@@ -54,11 +54,16 @@ class Router:
         self.application.add_handler(MessageHandler(
             filters.Document.ALL & filters.CaptionRegex(r'/import_history'), self.import_history))
 
-    def _create_command_handler(self, handler_class: Type[GenericHandler]):
+    def _create_command_handler(self, handler_class: Union[Type[GenericHandler], Callable]):
         """Create a command handler for a given handler class."""
         async def command_handler(update: Update, context: CallbackContext):
-            await self._handle_command(update, context, handler_class)
+            if callable(handler_class) and handler_class.__name__ == self.set_gab.__name__:
+                await self.set_gab(update, context)
+            else:
+                await self._handle_command(update, context, handler_class)
         return command_handler
+
+
 
     async def _send_response(self, context: CallbackContext, chat_id: int,
                              response: str, reply_to_message_id=None):
@@ -68,7 +73,7 @@ class Router:
                 chat_id=chat_id, text=response, reply_to_message_id=reply_to_message_id)
 
     async def _handle_command(self, update: Update, context: CallbackContext,
-                              handler_class: Type[GenericHandler],
+                              handler_class: Union[Type[GenericHandler], Callable],
                               document: Optional[Document] = None):
         """Handle commands using the specified handler class."""
         logger.debug("Handling %s command", handler_class.__name__)

@@ -28,7 +28,8 @@ class MessageHandler(GenericHandler):
         """Initialize the MessageHandler with update, session, and config."""
         super().__init__(update, session, config)
         self.learn_service = LearnService(
-            words=self.words, chat_id=self.chat.id, session=self.session
+            words=self.words, end_sentence=self.config.end_sentence,
+            chat_id=self.chat.id, session=self.session
         )
         self.story_service = StoryService(
             words=self.words,

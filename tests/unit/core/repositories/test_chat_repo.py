@@ -5,13 +5,16 @@ from core.enums.chat_types import ChatType
 from core.repositories.chat_repository import ChatRepository
 
 
-def test_get_or_create_by_existing_chat(
-    chat_repo: ChatRepository, chat: Chat, dbsession: Session):
+def test_get_or_create_by_existing_chat(chat_repo: ChatRepository, chat: Chat, dbsession: Session):
+    result = chat_repo.get_or_create_by(dbsession, telegram_id=123, name="Test Chat", chat_type="group")
     
-    result = chat_repo.get_or_create_by(
-        dbsession, telegram_id=123, name="Test Chat", chat_type="group")
-
-    assert result == chat
+    # Ensure all fields are correctly checked
+    assert result.id == chat.id
+    assert result.telegram_id == chat.telegram_id
+    assert result.chat_type == chat.chat_type
+    assert result.name == chat.name
+    assert result.created_at == chat.created_at
+    assert result.updated_at == chat.updated_at
 
 
 def test_get_or_create_by_new_chat(chat_repo: ChatRepository, dbsession: Session):

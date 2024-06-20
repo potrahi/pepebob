@@ -34,7 +34,10 @@ def test_learn_pair_with_sentences(chat: Chat, dbsession: Session):
     Test the learn_pair method with words ending in sentence delimiters.
     """
     words = ["hello", "world.", "goodbye", "world"]
-    learn_service = LearnService(words=words, chat_id=chat.id, session=dbsession)
+    end_sentence = [".", "!", "?"]
+    learn_service = LearnService(
+        words=words, chat_id=chat.id, session=dbsession,
+        end_sentence=end_sentence)
     learn_service.learn_pair()
 
     # Verify words were learned

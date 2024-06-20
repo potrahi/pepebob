@@ -10,7 +10,6 @@ from core.entities.word_entity import Word
 from core.repositories.pair_repository import PairRepository
 from core.repositories.reply_repository import ReplyRepository
 from core.repositories.word_repository import WordRepository
-from config import Config
 
 
 class LearnService:
@@ -18,17 +17,20 @@ class LearnService:
     Service class for managing the learning process of word pairs and replies.
     """
 
-    def __init__(self, words: List[str], chat_id: int, session: Session):
+    def __init__(
+            self, words: List[str], end_sentence: List[str],
+            chat_id: int, session: Session):
         """
         Initialize the LearnService with words, chat_id, and a SQLAlchemy session.
 
         Args:
             words (List[str]): List of words to learn.
+            end_sentence (List[str]): List of end sentence punctuation
             chat_id (int): Chat ID associated with the learning process.
             session (Session): SQLAlchemy session for database operations.
         """
-        self.end_sentence = Config().end_sentence
         self.words = words
+        self.end_sentence = end_sentence
         self.chat_id = chat_id
         self.session = session
         self.word_repo = WordRepository()

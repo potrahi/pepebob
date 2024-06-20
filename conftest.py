@@ -1,7 +1,14 @@
 from datetime import datetime
+from unittest.mock import MagicMock
 import pytest
 from sqlalchemy import create_engine, Engine
 from sqlalchemy.orm import sessionmaker, Session
+from telegram import (
+    Update, Message,
+    Chat as TelegramChat, User
+)
+from bot.handlers.generic_handler import GenericHandler
+from config import Config
 from core.entities.base_entity import Base
 from core.entities.chat_entity import Chat
 from core.entities.pair_entity import Pair
@@ -101,8 +108,14 @@ def chat(dbsession: Session) -> Chat:
     """
     created_date = datetime(2023, 1, 2, 0, 0, 0)
     updated_date = datetime(2023, 1, 2, 0, 0, 0)
-    chat_entity = Chat(telegram_id=123, chat_type=ChatType.from_str("chat"), random_chance=5,
-                       created_at=created_date, updated_at=updated_date, name="Test chat")
+    chat_entity = Chat(
+        telegram_id=123,
+        chat_type=ChatType.from_str("chat"),
+        random_chance=5,
+        created_at=created_date,
+        updated_at=updated_date,
+        name="Test chat"
+    )
     dbsession.add(chat_entity)
     dbsession.commit()
     return chat_entity
@@ -132,7 +145,10 @@ def learn_service(dbsession: Session, word1: Word, word2: Word, chat: Chat) -> L
     Fixture to provide a LearnService instance.
     """
     words = [word1.word, word2.word]
-    return LearnService(words=words, chat_id=chat.id, session=dbsession)
+    end_sentence = [".", "!", "?"]
+    return LearnService(
+        words=words, chat_id=chat.id,
+        session=dbsession, end_sentence=end_sentence)
 
 
 @pytest.fixture
@@ -147,3 +163,41 @@ def story_service(word1: Word, word2: Word, chat: Chat, dbsession: Session) -> S
         words=words, context=context, chat_id=chat.id,
         session=dbsession, end_sentence=end_sentence
     )
+
+
+class TestGenericHandler(GenericHandler):
+    async def call(self, *args, **kwargs):
+        return "Called"
+
+
+@pytest.fixture
+def mock_update():
+    user = User(id=123, first_name='Test', is_bot=False)
+    telegram_chat = TelegramChat(id=456, type='private', title='Test Chat')
+    message = Message(message_id=1, date=datetime.now(),
+                      chat=telegram_chat, text="Test message", from_user=user)
+    update = Update(update_id=1, message=message)
+    return update
+
+
+@pytest.fixture
+def mock_session():
+    return MagicMock(spec=Session)
+
+
+@pytest.fixture
+def mock_config():
+    config = Config()
+    config.bot.name = "TestBot"
+    config.bot.anchors = ["hello", "test"]
+    config.cache.host = "localhost"
+    config.cache.port = 6379
+    config.cache.name = "test_cache"
+    return config
+
+
+@pytest.fixture
+def handler(mock_update: Update, mock_session: MagicMock, mock_config: Config):
+    generic_handler = TestGenericHandler(
+        update=mock_update, session=mock_session, config=mock_config)
+    return generic_handler

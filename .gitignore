@@ -8,3 +8,4 @@ venv/
 *session-journal
 *.csv
 *.json
+*.patch

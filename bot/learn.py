@@ -29,6 +29,7 @@ class Learn:
 
     max_workers = 5
     max_no_item_count = 50
+    config = Config()
 
     @staticmethod
     def run():
@@ -38,8 +39,7 @@ class Learn:
         """
         no_item_count = 0
 
-        config = Config()
-        engine = create_engine(config.db.url)
+        engine = create_engine(Learn.config.db.url)
         session_local = sessionmaker(
             autocommit=False, autoflush=False, bind=engine)
         learn_queue_repository = LearnQueueRepository()
@@ -72,7 +72,8 @@ class Learn:
                     time.sleep(5)
                     no_item_count = 0
 
-            logger.debug("No new learn items for a while, finishing execution.")
+            logger.debug(
+                "No new learn items for a while, finishing execution.")
 
     @staticmethod
     def process_item(session_local, learn_queue_repository) -> bool:
@@ -109,11 +110,14 @@ class Learn:
             if learn_item:
                 logger.debug("Processing learn item: %s", learn_item)
                 learn_service = LearnService(
-                    learn_item.message, learn_item.chat_id, session)
+                    words=learn_item.message, end_sentence=Learn.config.end_sentence,
+                    chat_id=learn_item.chat_id, session=session
+                )
                 learn_service.learn_pair()
                 return True
             else:
-                logger.debug("No learn item found, sleeping for a short period.")
+                logger.debug(
+                    "No learn item found, sleeping for a short period.")
                 time.sleep(0.1)
                 return False
         except (SQLAlchemyError, PyMongoError) as e:

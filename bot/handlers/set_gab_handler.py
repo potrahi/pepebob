@@ -26,8 +26,8 @@ class SetGabHandler(GenericHandler):
         5. Returns a message indicating the result of the action.
 
         Args:
-            *args: Additional arguments.
-            **kwargs: Additional keyword arguments, should include 'level'.
+            *args: Additional arguments, should include 'level'.
+            **kwargs: Additional keyword arguments
 
         Returns:
             Optional[str]: A message indicating the result of the action. Possible return 
@@ -39,7 +39,7 @@ class SetGabHandler(GenericHandler):
         """
         self.before()
 
-        level = kwargs.get('level')
+        level = int(args[0])
         if level is None:
             return "Level is required."
 
