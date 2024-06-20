@@ -13,6 +13,7 @@ from core.repositories.pair_repository import PairRepository
 from core.repositories.reply_repository import ReplyRepository
 from core.repositories.word_repository import WordRepository
 from core.services.learn_service import LearnService
+from core.services.story_service import StoryService
 
 
 @pytest.fixture(scope='module')
@@ -132,3 +133,17 @@ def learn_service(dbsession: Session, word1: Word, word2: Word, chat: Chat) -> L
     """
     words = [word1.word, word2.word]
     return LearnService(words=words, chat_id=chat.id, session=dbsession)
+
+
+@pytest.fixture
+def story_service(word1: Word, word2: Word, chat: Chat, dbsession: Session) -> StoryService:
+    """
+    Fixture to provide a StoryService instance.
+    """
+    words = [word1.word, word2.word]
+    context = ["contextword"]
+    end_sentence = [".", "!", "?"]
+    return StoryService(
+        words=words, context=context, chat_id=chat.id,
+        session=dbsession, end_sentence=end_sentence
+    )

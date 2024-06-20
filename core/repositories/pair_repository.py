@@ -10,7 +10,7 @@ from datetime import datetime, timedelta
 
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy import select, update, delete, func
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 from core.entities.pair_entity import Pair
 from core.entities.reply_entity import Reply
@@ -136,18 +136,26 @@ class PairRepository:
         logger.debug("Getting pairs with replies for chat_id: %d, first_ids: %s, second_ids: %s",
                      chat_id, first_ids, second_ids)
         time_offset = datetime.now() - timedelta(minutes=10)
-        result = session.execute(
+
+        subquery = (
+            select(Reply.pair_id)
+            .filter(Reply.pair_id == Pair.id)
+            .exists()
+        )
+
+        query = (
             select(Pair)
+            .options(joinedload(Pair.replies))
             .where(
                 (Pair.chat_id == chat_id) &
                 (Pair.first_id == first_ids) &
                 (Pair.second_id.in_(second_ids)) &
                 (Pair.created_at < time_offset) &
-                session.query(Reply).filter(
-                    Reply.pair_id == Pair.id).exists()
+                subquery
             )
             .limit(3)
-        ).scalars().all()
+        )
+        result = session.execute(query).unique().scalars().all()
         logger.debug("Found pairs: %s", result)
         return list(result)
 

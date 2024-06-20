@@ -9,7 +9,10 @@ from typing import List, Optional
 
 from sqlalchemy import select, insert
 from sqlalchemy.orm import Session
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import (
+    IntegrityError, SQLAlchemyError, NoResultFound,
+    MultipleResultsFound
+)
 
 from core.entities.word_entity import Word
 
@@ -96,11 +99,22 @@ class WordRepository:
             Optional[Word]: The found Word, or None if not found.
         """
         logger.debug("Getting Word by ID: %d", word_id)
-        result = session.execute(
-            select(Word).where(Word.id == word_id).limit(1)
-        ).scalar()
-        logger.debug("Found Word: %s", result)
-        return result
+        try:
+            result = session.execute(
+                select(Word).where(Word.id == word_id)
+            ).scalar_one_or_none()
+            logger.debug("Found Word: %s", result)
+            return result
+        except NoResultFound:
+            logger.warning("No Word found with ID: %d", word_id)
+            return None
+        except MultipleResultsFound:
+            logger.error("Multiple Words found with ID: %d", word_id)
+            return None
+        except SQLAlchemyError as e:
+            logger.error(
+                "Database error occurred while getting Word by ID: %d, error: %s", word_id, e)
+            return None
 
     def learn_words(self, session: Session, words: List[str]) -> None:
         """

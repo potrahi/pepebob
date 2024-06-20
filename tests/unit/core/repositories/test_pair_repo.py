@@ -3,7 +3,6 @@ This module contains unit tests for the PairRepository class.
 """
 
 from datetime import datetime, timedelta
-import pytest
 from sqlalchemy.orm import Session
 from core.entities.chat_entity import Chat
 from core.entities.pair_entity import Pair
@@ -39,22 +38,13 @@ def test_has_with_word_id(pair_repo: PairRepository, pair: Pair, dbsession: Sess
 
 
 def test_get_pair_with_replies(
-        pair_repo: PairRepository, chat: Chat, word1: Word,
-        word2: Word, dbsession: Session):
+        pair_repo: PairRepository, pair: Pair, reply: Reply,
+        chat: Chat, word1: Word, word2: Word, dbsession: Session):
     """
     Test the get_pair_with_replies method to retrieve pairs with replies.
     """
-    pair = Pair(chat_id=chat.id, first_id=word1.id, second_id=word2.id,
-                created_at=datetime.now() - timedelta(minutes=15))
-    dbsession.add(pair)
-    dbsession.commit()
-
-    reply = Reply(pair_id=pair.id, word_id=word1.id, count=1)
-    dbsession.add(reply)
-    dbsession.commit()
-
     result = pair_repo.get_pair_with_replies(
-        dbsession, chat.id, word1.id, [word2.id]
+        dbsession, pair.chat_id, pair.first_id, [pair.second_id]
     )
     assert len(result) == 1
     assert result[0].chat_id == chat.id
