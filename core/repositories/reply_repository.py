@@ -10,6 +10,7 @@ from typing import List, Optional
 from sqlalchemy import select, update
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
+from sqlalchemy.exc import SQLAlchemyError
 
 from core.entities.reply_entity import Reply as ReplyEntity
 
@@ -57,16 +58,23 @@ class ReplyRepository:
         Returns:
             List[ReplyEntity]: List of replies for the given pair_id.
         """
-        logger.debug("Getting top 3 replies for pair_id: %d", pair_id)
-        result = session.execute(
-            select(ReplyEntity)
-            .where(ReplyEntity.pair_id == pair_id)
-            .order_by(ReplyEntity.count.desc())
-            .limit(3)
-        ).scalars().all()
-        replies = list(result)
-        logger.debug("Found replies: %s", replies)
-        return replies
+        try:
+            logger.debug("Getting top 3 replies for pair_id: %d", pair_id)
+            result = session.execute(
+                select(ReplyEntity)
+                .where(ReplyEntity.pair_id == pair_id)
+                .order_by(ReplyEntity.count.desc())
+                .limit(3)
+            ).scalars().all()
+            replies = list(result)
+            logger.debug("Found replies: %s", replies)
+            return replies
+        except SQLAlchemyError as e:
+            logger.error(
+                "Database error occurred while getting replies for pair_id: %d, error: %s", 
+                pair_id, e
+            )
+            return []
 
     def increment_reply(self, session: Session, reply_id: int, counter: int) -> None:
         """

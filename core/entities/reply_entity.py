@@ -31,7 +31,7 @@ class Reply(Base):
     pair_id: Mapped[int] = mapped_column(Integer, ForeignKey(
         'pairs.id', ondelete='CASCADE'), nullable=False)
     word_id: Mapped[int] = mapped_column(
-        Integer, ForeignKey('words.id', ondelete='CASCADE'))
+        Integer, ForeignKey('words.id', ondelete='CASCADE'), nullable=True)
     count: Mapped[int] = mapped_column(BigInteger, default=1, nullable=False)
 
     pair = relationship('Pair', back_populates='replies')

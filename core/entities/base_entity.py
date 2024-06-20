@@ -4,7 +4,7 @@ The Base class is used as a foundation for creating database models with SQLAlch
 
 Example usage:
 
-    from sqlalchemy.ext.declarative import declarative_base
+    from sqlalchemy.orm import declarative_base
     
     Base = declarative_base()
     
@@ -17,6 +17,6 @@ Example usage:
 This module should be imported and used in other scripts where SQLAlchemy models are defined.
 """
 
-from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import declarative_base
 
 Base = declarative_base()

@@ -22,7 +22,10 @@ class StoryService:
     """
 
     def __init__(self, words: List[str], context: List[str], chat_id: int,
-                 session: Session, end_sentence: List[str], sentences: Optional[int] = None):
+                 session: Session, end_sentence: List[str], sentences: Optional[int] = None,
+                 pair_repo: Optional[PairRepository] = None,
+                 reply_repo: Optional[ReplyRepository] = None,
+                 word_repo: Optional[WordRepository] = None):
         """
         Initialize the StoryService with words, context, chat_id, session, end_sentence, 
             and sentences.
@@ -34,6 +37,9 @@ class StoryService:
             session (Session): SQLAlchemy session for database operations.
             end_sentence (List[str]): List of characters that indicate sentence endings.
             sentences (Optional[int], optional): Number of sentences to generate. Defaults to None.
+            pair_repo (Optional[PairRepository], optional): Pair repository. Defaults to None.
+            reply_repo (Optional[ReplyRepository], optional): Reply repository. Defaults to None.
+            word_repo (Optional[WordRepository], optional): Word repository. Defaults to None.
         """
         self.words = words
         self.context = context
@@ -44,6 +50,10 @@ class StoryService:
         self.current_sentences = []
         self.current_word_ids = []
 
+        self.pair_repo = pair_repo or PairRepository()
+        self.reply_repo = reply_repo or ReplyRepository()
+        self.word_repo = word_repo or WordRepository()
+
     def _generate_sentence(self) -> None:
         """
         Generate a single sentence for the story and add it to the current sentences.
@@ -51,8 +61,10 @@ class StoryService:
         sentence = []
         safety_counter = 50
 
-        first_word_id: Optional[int] = None
-        second_word_ids: List[Optional[int]] = list(self.current_word_ids)
+        first_word_id = self.current_word_ids.pop(
+            0) if self.current_word_ids else None
+        second_word_ids: List[Optional[int]] = list(
+            self.current_word_ids) if self.current_word_ids else [None]
 
         pairs = self._get_shuffled_pairs(first_word_id, second_word_ids)
 
@@ -82,7 +94,6 @@ class StoryService:
                 else:
                     break
             pairs = self._get_shuffled_pairs(first_word_id, second_word_ids)
-
         if sentence:
             final_sentence = self._set_sentence_end(" ".join(sentence).strip())
             self.current_sentences.append(final_sentence)
@@ -99,7 +110,7 @@ class StoryService:
         Returns:
             List[Pair]: The shuffled list of pairs.
         """
-        pairs = PairRepository().get_pair_with_replies(
+        pairs = self.pair_repo.get_pair_with_replies(
             session=self.session, chat_id=self.chat_id,
             first_ids=first_word_id, second_ids=second_word_ids
         )
@@ -116,7 +127,7 @@ class StoryService:
         Returns:
             List[Reply]: The shuffled list of replies.
         """
-        replies = ReplyRepository().replies_for_pair(
+        replies = self.reply_repo.replies_for_pair(
             session=self.session, pair_id=pair_id)
         shuffle(replies)
         return replies
@@ -131,7 +142,7 @@ class StoryService:
         Returns:
             Optional[Word]: The Word if found, otherwise None.
         """
-        return WordRepository().get_word_by_id(session=self.session, word_id=word_id or 0)
+        return self.word_repo.get_word_by_id(session=self.session, word_id=word_id or 0)
 
     def _set_sentence_end(self, sentence: str) -> str:
         """
@@ -143,12 +154,12 @@ class StoryService:
         Returns:
             str: The sentence with a valid end character.
         """
-        if sentence[-1] in self.end_sentence:
-            return sentence
-        else:
+        if not sentence[-1] in self.end_sentence:
             end_punctuation = self.end_sentence[randint(
                 0, self._end_sentence_length - 1)]
             return f"{sentence}{end_punctuation}"
+
+        return sentence
 
     @property
     def _end_sentence_length(self) -> int:
@@ -167,17 +178,17 @@ class StoryService:
         Returns:
             Optional[str]: The generated story, or None if no sentences were generated.
         """
-        current_words: Dict[str, int] = {w.word: w.id for w in WordRepository().get_by_words(
+        current_words: Dict[str, int] = {w.word: w.id for w in self.word_repo.get_by_words(
             session=self.session, words=self.words + self.context)}
         self.current_word_ids = [current_words[w]
-                                 for w in self.words if w in current_words]
+                                 for w in self.words + self.context if w in current_words]
 
         num_sentences = self.sentences if self.sentences is not None else randint(
             1, 3)
         for _ in range(num_sentences):
             self._generate_sentence()
 
-        if self.current_sentences:
-            return " ".join(self.current_sentences)
-        else:
+        if not self.current_sentences:
             return None
+
+        return " ".join(self.current_sentences)
