@@ -28,7 +28,7 @@ class ImportHistoryHandler(GenericHandler):
     EXCLUDED_SENDERS = {"pepeground_bot", "pepepot", "pepepot_test"}
 
     def __init__(self, update: Update, session: Session,
-                 config: Config, document: Document):
+                 config: Config, document: Optional[Document]):
         """
         Initializes the ImportHistoryHandler instance.
 
@@ -71,12 +71,12 @@ class ImportHistoryHandler(GenericHandler):
             self.before()
             if not self.document:
                 return "No document attached. Please send a JSON file with the /learn command."
-            return await self._process_json_file()
+            return await self.process_json_file()
         except (json.JSONDecodeError, TimedOut, NetworkError) as e:
             logger.error("Specific error in call method: %s", e)
             return f"An error occurred: {e}"
 
-    async def _process_json_file(self) -> str:
+    async def process_json_file(self) -> str:
         """
         Processes the JSON file sent by the user, extracts messages, 
         and pushes words to the learning queue.
@@ -84,25 +84,26 @@ class ImportHistoryHandler(GenericHandler):
         Returns:
             str: The result message indicating success or failure.
         """
-        if not self._is_valid_document():
+        if not self.is_valid_document():
             return "Please send a valid JSON file with the /learn command."
 
-        telegram_file = await self._download_file()
+        telegram_file = await self.download_file()
         if not telegram_file:
             return "Failed to download the file."
 
         try:
             byte_array = await telegram_file.download_as_bytearray()
             json_data = json.loads(byte_array.decode('utf-8'))
-            extracted_data = self._extract_message_data(json_data)
+            extracted_data = self.extract_message_data(json_data)
 
             for message in extracted_data["messages"]:
-                words = self._extract_words(message["text"])
+                words = self.extract_words(message["text"])
                 self.learn_queue.push(words, self.chat.id)
 
-            return f"""
-        Successfully processed {len(extracted_data['messages'])} 
-        messages from provided JSON file."""
+            return (
+                f"Successfully processed {len(extracted_data['messages'])} "
+                "messages from provided JSON file."
+            )
 
         except json.JSONDecodeError as e:
             logger.error("JSON decode error: %s", e)
@@ -111,7 +112,7 @@ class ImportHistoryHandler(GenericHandler):
             logger.error("Network error while processing JSON file: %s", e)
             return "Network error occurred while processing the JSON file."
 
-    async def _download_file(self, retries: int = 3, delay: int = 5) -> Optional[File]:
+    async def download_file(self, retries: int = 3, delay: int = 5) -> Optional[File]:
         """
         Attempts to download the file with retries on failure.
 
@@ -133,7 +134,7 @@ class ImportHistoryHandler(GenericHandler):
                     await asyncio.sleep(delay)
         return None
 
-    def _is_valid_document(self) -> bool:
+    def is_valid_document(self) -> bool:
         """
         Validates the document.
 
@@ -142,7 +143,7 @@ class ImportHistoryHandler(GenericHandler):
         """
         return self.document is not None and self.document.mime_type == 'application/json'
 
-    def _extract_message_data(self, json_data: Dict[str, Any]) -> Dict[str, Any]:
+    def extract_message_data(self, json_data: Dict[str, Any]) -> Dict[str, Any]:
         """
         Extracts relevant message data from the JSON.
 
@@ -168,7 +169,7 @@ class ImportHistoryHandler(GenericHandler):
         ]
         return {"messages": messages}
 
-    def _extract_words(self, text: str) -> List[str]:
+    def extract_words(self, text: str) -> List[str]:
         """
         Extracts words from the text.
 

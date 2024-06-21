@@ -4,10 +4,11 @@ import pytest
 from sqlalchemy import create_engine, Engine
 from sqlalchemy.orm import sessionmaker, Session
 from telegram import (
-    Update, Message,
+    Document, Update, Message,
     Chat as TelegramChat, User
 )
 from bot.handlers.generic_handler import GenericHandler
+from bot.handlers.import_history_handler import ImportHistoryHandler
 from config import Config
 from core.entities.base_entity import Base
 from core.entities.chat_entity import Chat
@@ -190,3 +191,16 @@ def mock_config():
     config.cache.name = "test_cache"
     config.end_sentence = [".", "!", "?"]
     return config
+
+
+@pytest.fixture
+def mock_document():
+    document = MagicMock(spec=Document)
+    document.mime_type = 'application/json'
+    return document
+
+
+@pytest.fixture
+def import_history_handler(mock_update, mock_session, mock_config, mock_document: MagicMock):
+    return ImportHistoryHandler(
+        update=mock_update, session=mock_session, config=mock_config, document=mock_document)
