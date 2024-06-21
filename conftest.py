@@ -9,6 +9,7 @@ from telegram import (
 )
 from bot.handlers.generic_handler import GenericHandler
 from bot.handlers.import_history_handler import ImportHistoryHandler
+from bot.handlers.message_handler import MessageHandler
 from config import Config
 from core.entities.base_entity import Base
 from core.entities.chat_entity import Chat
@@ -190,6 +191,7 @@ def mock_config():
     config.cache.port = 27017
     config.cache.name = "test_cache"
     config.end_sentence = [".", "!", "?"]
+    config.bot.async_learn = False
     return config
 
 
@@ -204,3 +206,11 @@ def mock_document():
 def import_history_handler(mock_update, mock_session, mock_config, mock_document: MagicMock):
     return ImportHistoryHandler(
         update=mock_update, session=mock_session, config=mock_config, document=mock_document)
+
+
+@pytest.fixture
+def message_handler(mock_update, mock_session, mock_config):
+    handler = MessageHandler(
+        update=mock_update, session=mock_session, config=mock_config)
+    handler.context_repository = MagicMock()
+    return handler

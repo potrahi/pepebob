@@ -49,11 +49,11 @@ class MessageHandler(GenericHandler):
         2. Checks if the message has text and is not an edition (i.e., not edited). If not, 
             logs the condition and exits.
         3. Logs the receipt of the message, including the text, chat name, and migration ID.
-        4. Calls the `_learn` method to learn the words from the message based on the bot's 
+        4. Calls the `learn` method to learn the words from the message based on the bot's 
             asynchronous configuration.
         5. Updates the chat context with the words from the message using the context repository.
         6. Checks if the `StoryService` is available. If not, logs the condition and exits.
-        7. Calls the `_should_generate_story` method to determine if a story should be generated 
+        7. Calls the `should_generate_story` method to determine if a story should be generated 
             based on various conditions.
         8. If conditions are met for generating a story, logs the condition and generates the 
             story using the `StoryService`.
@@ -80,7 +80,7 @@ class MessageHandler(GenericHandler):
             self.migration_id
         )
 
-        self._learn()
+        self.learn()
         self.context_repository.update_context(self.chat_context, self.words)
         logger.debug("Context updated")
 
@@ -88,14 +88,14 @@ class MessageHandler(GenericHandler):
             logger.debug("StoryService is None, exiting")
             return None
 
-        if self._should_generate_story():
+        if self.should_generate_story():
             logger.debug("Conditions met for generating story")
             return self.story_service.generate()
 
         logger.debug("No conditions met for generating story")
         return None
 
-    def _learn(self) -> None:
+    def learn(self) -> None:
         """Learn the words based on the async configuration."""
         if self.config.bot.async_learn:
             logger.debug("Async learn enabled, pushing to learn queue")
@@ -104,7 +104,7 @@ class MessageHandler(GenericHandler):
             logger.debug("Async learn disabled, learning pair immediately")
             self.learn_service.learn_pair()
 
-    def _should_generate_story(self) -> bool:
+    def should_generate_story(self) -> bool:
         """Determine if a story should be generated based on various conditions."""
         return (
             self.is_reply_to_bot or
