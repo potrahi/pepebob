@@ -32,9 +32,9 @@ class Router:
         self.application = Application.builder().token(config.bot.token).build()
         self.session = session
         self.config = config
-        self._add_handlers()
+        self.add_handlers()
 
-    def _add_handlers(self):
+    def add_handlers(self):
         """Add command and message handlers to the bot application."""
         command_handlers = {
             "cool_story": cool_story_handler.CoolStoryHandler,
@@ -47,32 +47,32 @@ class Router:
 
         for command, handler in command_handlers.items():
             self.application.add_handler(CommandHandler(
-                command, self._create_command_handler(handler)))
+                command, self.create_command_handler(handler)))
 
         self.application.add_handler(MessageHandler(
             filters.TEXT & ~filters.COMMAND, self.handle_message))
         self.application.add_handler(MessageHandler(
             filters.Document.ALL & filters.CaptionRegex(r'/import_history'), self.import_history))
 
-    def _create_command_handler(self, handler_class: Union[Type[GenericHandler], Callable]):
+    def create_command_handler(self, handler_class: Union[Type[GenericHandler], Callable]):
         """Create a command handler for a given handler class."""
         async def command_handler(update: Update, context: CallbackContext):
             if callable(handler_class) and handler_class.__name__ == self.set_gab.__name__:
                 await self.set_gab(update, context)
             else:
-                await self._handle_command(update, context, handler_class)
+                await self.handle_command(update, context, handler_class)
         return command_handler
 
 
 
-    async def _send_response(self, context: CallbackContext, chat_id: int,
+    async def send_response(self, context: CallbackContext, chat_id: int,
                              response: str, reply_to_message_id=None):
         """Send a response message to the user."""
         if response:
             await context.bot.send_message(
                 chat_id=chat_id, text=response, reply_to_message_id=reply_to_message_id)
 
-    async def _handle_command(self, update: Update, context: CallbackContext,
+    async def handle_command(self, update: Update, context: CallbackContext,
                               handler_class: Union[Type[GenericHandler], Callable],
                               document: Optional[Document] = None):
         """Handle commands using the specified handler class."""
@@ -86,13 +86,13 @@ class Router:
         response = await handler.call()
         msg = update.message
         if response and msg:
-            await self._send_response(
+            await self.send_response(
                 context, msg.chat_id, response, reply_to_message_id=msg.message_id)
 
     async def import_history(self, update: Update, context: CallbackContext):
         """Handle the /import_history command."""
         document = update.message.document if update.message else None
-        await self._handle_command(
+        await self.handle_command(
             update, context, import_history_handler.ImportHistoryHandler, document=document
         )
 
@@ -108,10 +108,10 @@ class Router:
                     update, self.session, self.config)
                 response = await handler.call(level)
                 if response:
-                    await self._send_response(context, msg.chat_id, response)
+                    await self.send_response(context, msg.chat_id, response)
             except (IndexError, ValueError):
                 logger.error("Invalid arguments for /set_gab command")
-                await self._send_response(context, msg.chat_id, "Usage: /set_gab <level>")
+                await self.send_response(context, msg.chat_id, "Usage: /set_gab <level>")
 
     async def handle_message(self, update: Update, context: CallbackContext):
         """Handle incoming messages."""
@@ -126,11 +126,11 @@ class Router:
                     if isinstance(response, tuple):
                         left, right = response
                         if left:
-                            await self._send_response(context, msg.chat_id, left, msg.message_id)
+                            await self.send_response(context, msg.chat_id, left, msg.message_id)
                         if right:
-                            await self._send_response(context, msg.chat_id, right)
+                            await self.send_response(context, msg.chat_id, right)
                     else:
-                        await self._send_response(context, msg.chat_id, response)
+                        await self.send_response(context, msg.chat_id, response)
             except TelegramError as e:
                 logger.error("TelegramError: %s", e)
             except (ValueError, KeyError, AttributeError, TypeError, OperationalError) as e:

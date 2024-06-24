@@ -1,5 +1,5 @@
 from datetime import datetime
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 import pytest
 from sqlalchemy import create_engine, Engine
 from sqlalchemy.orm import sessionmaker, Session
@@ -7,11 +7,12 @@ from telegram import (
     Document, Update, Message,
     Chat as TelegramChat, User
 )
-from bot.handlers.generic_handler import GenericHandler
+from telegram.ext import Application
 from bot.handlers.import_history_handler import ImportHistoryHandler
 from bot.handlers.message_handler import MessageHandler
 from bot.handlers.ping_handler import PingHandler
 from bot.handlers.set_gab_handler import SetGabHandler
+from bot.router import Router
 from config import Config
 from core.entities.base_entity import Base
 from core.entities.chat_entity import Chat
@@ -189,11 +190,12 @@ def mock_config():
     config = Config()
     config.bot.name = "TestBot"
     config.bot.anchors = ["hello", "test"]
+    config.bot.async_learn = False
+    config.bot.token = "fake-token"
     config.cache.host = "localhost"
     config.cache.port = 27017
     config.cache.name = "test_cache"
     config.end_sentence = [".", "!", "?"]
-    config.bot.async_learn = False
     return config
 
 
@@ -226,3 +228,11 @@ def ping_handler(mock_update: Update, mock_session: Session, mock_config: Config
 @pytest.fixture
 def set_gab_handler(mock_update: Update, mock_session, mock_config):
     return SetGabHandler(update=mock_update, session=mock_session, config=mock_config)
+
+
+@pytest.fixture
+def router(mock_config: Config, mock_session: Session):
+    mock_application = MagicMock(spec=Application)
+    with patch.object(Application, 'builder') as mock_builder:
+        mock_builder.return_value.token.return_value.build.return_value = mock_application
+        return Router(config=mock_config, session=mock_session)
