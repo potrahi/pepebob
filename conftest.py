@@ -214,3 +214,5 @@ def message_handler(mock_update, mock_session, mock_config):
         update=mock_update, session=mock_session, config=mock_config)
     handler.context_repository = MagicMock()
     return handler
+
+
