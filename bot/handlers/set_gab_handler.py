@@ -39,9 +39,11 @@ class SetGabHandler(GenericHandler):
         """
         self.before()
 
-        level = int(args[0])
-        if level is None:
+        if not args:
             return "Level is required."
+        
+        level = int(args[0])
+                    
 
         if level > 50 or level < 0:
             return "0-50 allowed, Dude!"

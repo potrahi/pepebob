@@ -10,6 +10,8 @@ from telegram import (
 from bot.handlers.generic_handler import GenericHandler
 from bot.handlers.import_history_handler import ImportHistoryHandler
 from bot.handlers.message_handler import MessageHandler
+from bot.handlers.ping_handler import PingHandler
+from bot.handlers.set_gab_handler import SetGabHandler
 from config import Config
 from core.entities.base_entity import Base
 from core.entities.chat_entity import Chat
@@ -216,3 +218,11 @@ def message_handler(mock_update, mock_session, mock_config):
     return handler
 
 
+@pytest.fixture
+def ping_handler(mock_update: Update, mock_session: Session, mock_config: Config):
+    return PingHandler(update=mock_update, session=mock_session, config=mock_config)
+
+
+@pytest.fixture
+def set_gab_handler(mock_update: Update, mock_session, mock_config):
+    return SetGabHandler(update=mock_update, session=mock_session, config=mock_config)
