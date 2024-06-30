@@ -1,5 +1,5 @@
 from datetime import datetime
-from unittest.mock import MagicMock, PropertyMock, create_autospec, patch
+from unittest.mock import MagicMock, PropertyMock, patch
 import pytest
 from sqlalchemy import create_engine, Engine
 from sqlalchemy.orm import sessionmaker, Session
@@ -22,7 +22,7 @@ from core.entities.reply_entity import Reply
 from core.entities.word_entity import Word
 from core.enums.chat_types import ChatType
 from core.repositories.chat_repository import ChatRepository
-from core.repositories.learn_queue_repository import LearnItem, LearnQueueRepository
+from core.repositories.learn_queue_repository import LearnQueueRepository
 from core.repositories.pair_repository import PairRepository
 from core.repositories.reply_repository import ReplyRepository
 from core.repositories.word_repository import WordRepository
@@ -188,6 +188,11 @@ def mock_session():
 
 
 @pytest.fixture
+def mock_session_factory():
+    return MagicMock(spec=sessionmaker)
+
+
+@pytest.fixture
 def mock_config():
     config = Config()
     config.bot.name = "TestBot"
@@ -236,11 +241,11 @@ def set_gab_handler(mock_update: Update, mock_session, mock_config):
 
 
 @pytest.fixture
-def router(mock_config: Config, mock_session: Session):
+def router(mock_config: Config, mock_session_factory: sessionmaker):
     mock_application = MagicMock(spec=Application)
     with patch.object(Application, 'builder') as mock_builder:
         mock_builder.return_value.token.return_value.build.return_value = mock_application
-        return Router(config=mock_config, session=mock_session)
+        return Router(config=mock_config, session_factory=mock_session_factory)
 
 
 @pytest.fixture
@@ -249,5 +254,5 @@ def mock_learn_queue_repository():
 
 
 @pytest.fixture
-def learn_instance(mock_config: Config, mock_session: Session):
-    return Learn(config=mock_config, session=mock_session)
+def learn_instance(mock_config: Config, mock_session_factory: sessionmaker):
+    return Learn(config=mock_config, session_factory=mock_session_factory)

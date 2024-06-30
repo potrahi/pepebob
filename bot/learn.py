@@ -1,7 +1,8 @@
 import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 import logging
-from typing import Optional
-from sqlalchemy.orm import Session
+from typing import Optional, List
+from sqlalchemy.orm import sessionmaker
 from sqlalchemy.exc import SQLAlchemyError
 from pymongo.errors import PyMongoError
 from core.repositories.learn_queue_repository import LearnQueueRepository, LearnItem
@@ -16,11 +17,14 @@ logging.basicConfig(level=logging.DEBUG,
 class Learn:
     """Class responsible for processing learning items from the queue sequentially."""
 
-    def __init__(self, config: Config, session: Session, max_no_item_count: int = 5):
+    def __init__(
+            self, config: Config, session_factory: sessionmaker,
+            max_no_item_count: int = 5, num_workers: int = 10):
         self.config = config
         self.max_no_item_count = max_no_item_count
-        self.session = session
+        self.session_factory = session_factory
         self.learn_queue_repository = LearnQueueRepository()
+        self.num_workers = num_workers
 
     def run(self) -> None:
         """
@@ -33,16 +37,16 @@ class Learn:
             logger.debug(
                 "Starting processing cycle with no_item_count: %d", no_item_count)
             try:
-                item_processed = self.process_item()
-                logger.debug("Item processed: %s", item_processed)
-                if not item_processed:
+                items_processed = self.process_items_parallel()
+                logger.debug("Items processed: %d", items_processed)
+                if items_processed == 0:
                     no_item_count += 1
                     logger.debug("No item count incremented: %d/%d",
                                  no_item_count, self.max_no_item_count)
                 else:
                     no_item_count = 0
                     logger.debug(
-                        "Item processed successfully, no_item_count reset")
+                        "Items processed successfully, no_item_count reset")
             except KeyboardInterrupt:
                 logger.info("Interrupted by user, shutting down.")
                 break
@@ -53,41 +57,63 @@ class Learn:
 
         logger.debug("No new learn items for a while, finishing execution.")
 
-    def process_item(self) -> bool:
+    def process_items_parallel(self) -> int:
         """
-        Retrieves and processes a single learn item.
+        Retrieves and processes multiple learn items in parallel.
 
         Returns:
-            bool: True if an item was processed, False otherwise.
+            int: The number of items processed.
         """
-        with self.session as session:
+        items: List[Optional[LearnItem]] = []
+        with self.session_factory():
             try:
-                return self.learn(session)
+                for _ in range(self.num_workers):
+                    item = self.learn_queue_repository.pop()
+                    if item:
+                        items.append(item)
+                    else:
+                        break
             except (SQLAlchemyError, PyMongoError) as e:
                 logger.error("Database error: %s", str(e), exc_info=True)
                 time.sleep(5)
-                return False
+                return 0
 
-    def learn(self, session: Session) -> bool:
+        valid_items = [item for item in items if item is not None]
+
+        if not items:
+            time.sleep(0.1)
+            return 0
+
+        with ThreadPoolExecutor(max_workers=self.num_workers) as executor:
+            futures = [executor.submit(self.learn, item)
+                       for item in valid_items]
+            results = [future.result() for future in as_completed(futures)]
+
+        return sum(results)
+
+    def learn(self, item: Optional[LearnItem]) -> bool:
         """
         The core method that performs the learning operation on an item.
 
         Args:
-            session (Session): SQLAlchemy session.
+            item (LearnItem): Learn item to be processed.
 
         Returns:
             bool: True if an item was processed, False otherwise.
         """
-        learn_item: Optional[LearnItem] = self.learn_queue_repository.pop()
-        if not learn_item:
+        if not item:
             logger.debug("No learn item found, sleeping for a short period.")
-            time.sleep(0.1)
             return False
 
-        logger.debug("Processing learn item: %s", learn_item)
-        learn_service = LearnService(
-            words=learn_item.message, end_sentence=self.config.end_sentence,
-            chat_id=learn_item.chat_id, session=session
-        )
-        learn_service.learn_pair()
-        return True
+        logger.debug("Processing learn item: %s", item)
+        with self.session_factory() as session:
+            try:
+                learn_service = LearnService(
+                    words=item.message, end_sentence=self.config.end_sentence,
+                    chat_id=item.chat_id, session=session
+                )
+                learn_service.learn_pair()
+                return True
+            except (SQLAlchemyError, PyMongoError) as e:
+                logger.error("Database error: %s", str(e), exc_info=True)
+                return False

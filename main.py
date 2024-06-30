@@ -43,8 +43,8 @@ def setup_database(config):
     """Set up the database connection and return the engine and session."""
     logger.debug("Database URI: %s", config.db.url)
     engine = create_engine(config.db.url)
-    Session = sessionmaker(bind=engine)
-    return engine, Session()
+    SessionFactory = sessionmaker(bind=engine)
+    return engine, SessionFactory
 
 
 def check_db_connection(engine):
@@ -59,13 +59,13 @@ def check_db_connection(engine):
         logger.error("Database connection error: %s", e)
 
 
-def run_task(arg, config, session):
+def run_task(arg, config, session_factory):
     """Run the specified task based on the argument."""
     tasks = {
-        "learn": lambda: Learn(config=config, session=session).run(),
-        "clearpairs": lambda: CleanPairs().run(session, config),
+        "learn": lambda: Learn(config=config, session_factory=session_factory).run(),
+        "clearpairs": lambda: run_with_session(CleanPairs().run, session_factory, config),
         "clearqueue": lambda: CleanQueue().run(),
-        "bot": lambda: Router(config, session).run(),
+        "bot": lambda: Router(config=config, session_factory=session_factory).run(),
     }
 
     task = tasks.get(arg)
@@ -81,6 +81,15 @@ def run_task(arg, config, session):
         sys.exit(1)
 
 
+def run_with_session(task_func, session_factory, *args):
+    """Run a task function with a session and ensure the session is closed afterwards."""
+    session = session_factory()
+    try:
+        task_func(session, *args)
+    finally:
+        session.close()
+
+
 def main():
     """Main function to start the application."""
     if len(sys.argv) < 2:
@@ -93,12 +102,11 @@ def main():
     logger.debug("Application argument: %s", arg)
 
     config = get_config()
-    engine, session = setup_database(config)
+    engine, session_factory = setup_database(config)
     check_db_connection(engine)
 
-    run_task(arg, config, session)
+    run_task(arg, config, session_factory)
 
-    session.close()
     logger.debug("Database session closed.")
 
 

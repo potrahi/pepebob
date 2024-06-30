@@ -1,6 +1,6 @@
 from typing import Callable, Generator
 from unittest.mock import MagicMock, patch, AsyncMock
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import sessionmaker
 import pytest
 from pytest_mock import MockerFixture
 from telegram import Chat, Update, Document, Message
@@ -13,9 +13,9 @@ from bot.handlers.generic_handler import GenericHandler
 from config import Config
 
 
-def test_router_init(router: Router, mock_config: Config, mock_session: Session):
+def test_router_init(router: Router, mock_config: Config, mock_session_factory: sessionmaker):
     assert router.config == mock_config
-    assert router.session == mock_session
+    assert router.session_factory == mock_session_factory
     assert isinstance(router.application, Application)
 
 
@@ -27,7 +27,7 @@ def test_router_add_handlers(router: Router):
 
 @pytest.mark.asyncio
 async def test_handle_command(
-        router: Router, mock_update: Update, mock_session: Session,
+        router: Router, mock_update: Update, mock_session_factory: sessionmaker,
         mock_config: Config, mocker: Callable[..., Generator[MockerFixture, None, None]]):
     handler_class = MagicMock(spec=GenericHandler)
     handler_class.__name__ = "TestHandler"
@@ -40,7 +40,8 @@ async def test_handle_command(
         wraps=router.handle_command
     )
 
-    await router.handle_command(mock_update, MagicMock(spec=CallbackContext), handler_class)
+    with mock_session_factory() as mock_session:
+        await router.handle_command(mock_update, MagicMock(spec=CallbackContext), handler_class)
 
     handler_class.assert_called_once_with(
         mock_update, mock_session, mock_config)

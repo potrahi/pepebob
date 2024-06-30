@@ -12,7 +12,7 @@ from telegram import Document, Update
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, CallbackContext
 from telegram.error import TelegramError
 from sqlalchemy.exc import OperationalError
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import sessionmaker
 from bot.handlers.generic_handler import GenericHandler
 from bot.handlers import (
     cool_story_handler, get_gab_handler,
@@ -28,9 +28,9 @@ logging.basicConfig(level=logging.DEBUG,
 class Router:
     """Router class for handling Telegram bot commands and messages."""
 
-    def __init__(self, config: Config, session: Session):
+    def __init__(self, config: Config, session_factory: sessionmaker):
         self.application = Application.builder().token(config.bot.token).build()
-        self.session = session
+        self.session_factory = session_factory
         self.config = config
         self.add_handlers()
 
@@ -63,31 +63,30 @@ class Router:
                 await self.handle_command(update, context, handler_class)
         return command_handler
 
-
-
     async def send_response(self, context: CallbackContext, chat_id: int,
-                             response: str, reply_to_message_id=None):
+                            response: str, reply_to_message_id=None):
         """Send a response message to the user."""
         if response:
             await context.bot.send_message(
                 chat_id=chat_id, text=response, reply_to_message_id=reply_to_message_id)
 
     async def handle_command(self, update: Update, context: CallbackContext,
-                              handler_class: Union[Type[GenericHandler], Callable],
-                              document: Optional[Document] = None):
+                             handler_class: Union[Type[GenericHandler], Callable],
+                             document: Optional[Document] = None):
         """Handle commands using the specified handler class."""
         logger.debug("Handling %s command", handler_class.__name__)
-        handler = (
-            handler_class(update, self.session, self.config,
-                          document)  # type: ignore
-            if handler_class == import_history_handler.ImportHistoryHandler
-            else handler_class(update, self.session, self.config)
-        )
-        response = await handler.call()
-        msg = update.message
-        if response and msg:
-            await self.send_response(
-                context, msg.chat_id, response, reply_to_message_id=msg.message_id)
+        with self.session_factory() as session:
+            handler = (
+                handler_class(update, session, self.config,
+                              document)  # type: ignore
+                if handler_class == import_history_handler.ImportHistoryHandler
+                else handler_class(update, session, self.config)
+            )
+            response = await handler.call()
+            msg = update.message
+            if response and msg:
+                await self.send_response(
+                    context, msg.chat_id, response, reply_to_message_id=msg.message_id)
 
     async def import_history(self, update: Update, context: CallbackContext):
         """Handle the /import_history command."""
@@ -104,11 +103,12 @@ class Router:
         if msg and args:
             try:
                 level = int(args[0])
-                handler = set_gab_handler.SetGabHandler(
-                    update, self.session, self.config)
-                response = await handler.call(level)
-                if response:
-                    await self.send_response(context, msg.chat_id, response)
+                with self.session_factory() as session:
+                    handler = set_gab_handler.SetGabHandler(
+                        update, session, self.config)
+                    response = await handler.call(level)
+                    if response:
+                        await self.send_response(context, msg.chat_id, response)
             except (IndexError, ValueError):
                 logger.error("Invalid arguments for /set_gab command")
                 await self.send_response(context, msg.chat_id, "Usage: /set_gab <level>")
@@ -116,25 +116,26 @@ class Router:
     async def handle_message(self, update: Update, context: CallbackContext):
         """Handle incoming messages."""
         logger.debug("Handling incoming message")
-        handler = message_handler.MessageHandler(
-            update, self.session, self.config)
-        response = await handler.call()
-        msg = update.message
-        if msg:
-            try:
-                if response:
-                    if isinstance(response, tuple):
-                        left, right = response
-                        if left:
-                            await self.send_response(context, msg.chat_id, left, msg.message_id)
-                        if right:
-                            await self.send_response(context, msg.chat_id, right)
-                    else:
-                        await self.send_response(context, msg.chat_id, response)
-            except TelegramError as e:
-                logger.error("TelegramError: %s", e)
-            except (ValueError, KeyError, AttributeError, TypeError, OperationalError) as e:
-                logger.exception("Unexpected specific Exception: %s", e)
+        with self.session_factory() as session:
+            handler = message_handler.MessageHandler(
+                update, session, self.config)
+            response = await handler.call()
+            msg = update.message
+            if msg:
+                try:
+                    if response:
+                        if isinstance(response, tuple):
+                            left, right = response
+                            if left:
+                                await self.send_response(context, msg.chat_id, left, msg.message_id)
+                            if right:
+                                await self.send_response(context, msg.chat_id, right)
+                        else:
+                            await self.send_response(context, msg.chat_id, response)
+                except TelegramError as e:
+                    logger.error("TelegramError: %s", e)
+                except (ValueError, KeyError, AttributeError, TypeError, OperationalError) as e:
+                    logger.exception("Unexpected specific Exception: %s", e)
 
     def run(self):
         """Start the bot and run it."""
