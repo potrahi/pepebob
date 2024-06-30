@@ -18,25 +18,32 @@ logging.basicConfig(level=logging.DEBUG,
 class CleanQueue:
     """Class to handle cleaning the learn queue in the repository."""
 
-    learn_queue = LearnQueueRepository()
+    def __init__(self, learn_queue_repository=None, retry_delay=5):
+        """
+        Initialize the CleanQueue with a LearnQueueRepository instance.
 
-    @staticmethod
-    def run():
+        :param learn_queue_repository: Instance of LearnQueueRepository.
+        :param retry_delay: Time to wait between retries in seconds.
+        """
+        self.learn_queue = learn_queue_repository or LearnQueueRepository()
+        self.retry_delay = retry_delay
+
+    def run(self):
         """
         Continuously tries to clean the learn queue until successful.
         Logs the success or any database errors encountered.
         """
         while True:
             try:
-                CleanQueue._clean_up()
-                logger.info("Learn queue has been cleared.")
+                self._clean_up()
+                logger.info("Learn queue has been cleared successfully.")
                 break
             except PyMongoError as e:
                 logger.error(
                     "Database error occurred during cleanup: %s", e, exc_info=True)
-                time.sleep(5)
+                time.sleep(self.retry_delay)
 
-    @staticmethod
-    def _clean_up():
+    def _clean_up(self):
         """Clears the learn queue by calling the clear method of the repository."""
-        CleanQueue.learn_queue.clear()
+        self.learn_queue.clear()
+        logger.debug("Called clear method on learn queue repository.")

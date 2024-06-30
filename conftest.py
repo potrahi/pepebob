@@ -1,5 +1,5 @@
 from datetime import datetime
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, PropertyMock, create_autospec, patch
 import pytest
 from sqlalchemy import create_engine, Engine
 from sqlalchemy.orm import sessionmaker, Session
@@ -12,8 +12,9 @@ from bot.handlers.import_history_handler import ImportHistoryHandler
 from bot.handlers.message_handler import MessageHandler
 from bot.handlers.ping_handler import PingHandler
 from bot.handlers.set_gab_handler import SetGabHandler
+from bot.learn import Learn
 from bot.router import Router
-from config import Config
+from config import Config, DatabaseConfig
 from core.entities.base_entity import Base
 from core.entities.chat_entity import Chat
 from core.entities.pair_entity import Pair
@@ -21,6 +22,7 @@ from core.entities.reply_entity import Reply
 from core.entities.word_entity import Word
 from core.enums.chat_types import ChatType
 from core.repositories.chat_repository import ChatRepository
+from core.repositories.learn_queue_repository import LearnItem, LearnQueueRepository
 from core.repositories.pair_repository import PairRepository
 from core.repositories.reply_repository import ReplyRepository
 from core.repositories.word_repository import WordRepository
@@ -196,6 +198,9 @@ def mock_config():
     config.cache.port = 27017
     config.cache.name = "test_cache"
     config.end_sentence = [".", "!", "?"]
+    with patch.object(DatabaseConfig, 'url', new_callable=PropertyMock) as mock_url:
+        mock_url.return_value = 'sqlite:///:memory:'
+        config.db.url = mock_url  # type: ignore
     return config
 
 
@@ -236,3 +241,13 @@ def router(mock_config: Config, mock_session: Session):
     with patch.object(Application, 'builder') as mock_builder:
         mock_builder.return_value.token.return_value.build.return_value = mock_application
         return Router(config=mock_config, session=mock_session)
+
+
+@pytest.fixture
+def mock_learn_queue_repository():
+    return MagicMock(spec=LearnQueueRepository)
+
+
+@pytest.fixture
+def learn_instance(mock_config: Config, mock_session: Session):
+    return Learn(config=mock_config, session=mock_session)

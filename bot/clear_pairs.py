@@ -20,8 +20,18 @@ logging.basicConfig(level=logging.DEBUG,
 class CleanPairs:
     """Class for cleaning up old pairs from the database."""
 
-    @staticmethod
-    def run(session: Session, config: Config):
+    def __init__(self, pair_repository=None, retry_delay: int = 5):
+        """
+        Initialize the CleanPairs with a PairRepository instance and retry delay.
+
+        Args:
+            pair_repository (PairRepository): Instance of PairRepository.
+            retry_delay (int): Time to wait between retries in seconds.
+        """
+        self.pair_repository = pair_repository or PairRepository()
+        self.retry_delay = retry_delay
+
+    def run(self, session: Session, config: Config):
         """
         Continuously run the cleanup process in an infinite loop.
 
@@ -31,13 +41,12 @@ class CleanPairs:
         """
         while True:
             try:
-                CleanPairs.clean_up(session, config)
+                self.clean_up(session, config)
             except (SQLAlchemyError, ValueError, RuntimeError, OSError) as e:
-                CleanPairs._handle_exception(e)
-                time.sleep(5)
+                self._handle_exception(e)
+                time.sleep(self.retry_delay)
 
-    @staticmethod
-    def clean_up(session: Session, config: Config):
+    def clean_up(self, session: Session, config: Config):
         """
         Perform the cleanup operation by removing old pairs from the database.
 
@@ -47,21 +56,19 @@ class CleanPairs:
         """
         try:
             with session.begin():
-                pair_repo = PairRepository()
-                removed_ids: List[int] = pair_repo.remove_old(
+                removed_ids: List[int] = self.pair_repository.remove_old(
                     session, config.bot.cleanup_limit)
 
                 if not removed_ids:
-                    logger.info("Nothing to remove")
+                    logger.info("No pairs to remove.")
                 else:
                     logger.info(
                         "Removed %d pairs: %s", len(removed_ids), ', '.join(map(str, removed_ids)))
         except (SQLAlchemyError, ValueError, RuntimeError, OSError) as e:
-            CleanPairs._handle_exception(e)
+            self._handle_exception(e)
             raise
 
-    @staticmethod
-    def _handle_exception(e: Exception):
+    def _handle_exception(self, e: Exception):
         """
         Handle exceptions by logging appropriate error messages.
 
