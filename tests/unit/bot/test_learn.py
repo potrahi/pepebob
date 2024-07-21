@@ -16,7 +16,7 @@ def test_init(learn_instance: Learn, mock_config: Config, mock_session_factory: 
     assert learn_instance.session_factory == mock_session_factory
     assert isinstance(learn_instance.learn_queue_repository,
                       LearnQueueRepository)
-    assert learn_instance.num_workers == 4
+    assert learn_instance.num_workers == 10
 
 
 @patch.object(Learn, 'process_items_parallel', return_value=0)

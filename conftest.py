@@ -8,6 +8,7 @@ from telegram import (
     Chat as TelegramChat, User
 )
 from telegram.ext import Application
+from bot.clean_pairs import CleanPairs
 from bot.handlers.import_history_handler import ImportHistoryHandler
 from bot.handlers.message_handler import MessageHandler
 from bot.handlers.ping_handler import PingHandler
@@ -256,3 +257,8 @@ def mock_learn_queue_repository():
 @pytest.fixture
 def learn_instance(mock_config: Config, mock_session_factory: sessionmaker):
     return Learn(config=mock_config, session_factory=mock_session_factory)
+
+
+@pytest.fixture
+def clean_pairs(pair_repo):
+    return CleanPairs(pair_repository=pair_repo, retry_delay=0)

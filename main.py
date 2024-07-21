@@ -12,8 +12,8 @@ import pytz
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.exc import OperationalError, ProgrammingError, DatabaseError
-from bot.clear_queue import CleanQueue
-from bot.clear_pairs import CleanPairs
+from bot.clean_queue import CleanQueue
+from bot.clean_pairs import CleanPairs
 from bot.learn import Learn
 from bot.router import Router
 from config import Config
