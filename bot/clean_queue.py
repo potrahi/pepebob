@@ -18,7 +18,7 @@ logging.basicConfig(level=logging.DEBUG,
 class CleanQueue:
     """Class to handle cleaning the learn queue in the repository."""
 
-    def __init__(self, learn_queue_repository=None, retry_delay=5):
+    def __init__(self, learn_queue_repository=None, retry_delay=5, max_retries=None):
         """
         Initialize the CleanQueue with a LearnQueueRepository instance.
 
@@ -27,13 +27,15 @@ class CleanQueue:
         """
         self.learn_queue = learn_queue_repository or LearnQueueRepository()
         self.retry_delay = retry_delay
+        self.max_retries = max_retries
 
     def run(self):
         """
         Continuously tries to clean the learn queue until successful.
         Logs the success or any database errors encountered.
         """
-        while True:
+        retries = 0
+        while self.max_retries is None or retries < self.max_retries:
             try:
                 self._clean_up()
                 logger.info("Learn queue has been cleared successfully.")
@@ -42,6 +44,7 @@ class CleanQueue:
                 logger.error(
                     "Database error occurred during cleanup: %s", e, exc_info=True)
                 time.sleep(self.retry_delay)
+                retries += 1
 
     def _clean_up(self):
         """Clears the learn queue by calling the clear method of the repository."""
