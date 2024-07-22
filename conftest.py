@@ -1,13 +1,12 @@
 from datetime import datetime
 from unittest.mock import MagicMock, PropertyMock, patch
+
 import pytest
 from sqlalchemy import create_engine, Engine
 from sqlalchemy.orm import sessionmaker, Session
-from telegram import (
-    Document, Update, Message,
-    Chat as TelegramChat, User
-)
+from telegram import Document, Update, Message, Chat as TelegramChat, User
 from telegram.ext import Application
+
 from bot.clean_pairs import CleanPairs
 from bot.handlers.import_history_handler import ImportHistoryHandler
 from bot.handlers.message_handler import MessageHandler
@@ -49,49 +48,36 @@ def dbsession(engine: Engine, tables):
     transaction = connection.begin()
     session_obj = sessionmaker(bind=connection)
     session = session_obj()
-    yield session
-    session.close()
-    transaction.rollback()
-    connection.close()
+    try:
+        yield session
+    finally:
+        session.close()
+        transaction.rollback()
+        connection.close()
 
 
 @pytest.fixture
 def chat_repo() -> ChatRepository:
-    """
-    Fixture to provide a ChatRepository instance.
-    """
     return ChatRepository()
 
 
 @pytest.fixture
 def pair_repo() -> PairRepository:
-    """
-    Fixture to provide a PairRepository instance.
-    """
     return PairRepository()
 
 
 @pytest.fixture
 def reply_repo() -> ReplyRepository:
-    """
-    Fixture to provide a ReplyRepository instance.
-    """
     return ReplyRepository()
 
 
 @pytest.fixture
 def word_repo() -> WordRepository:
-    """
-    Fixture to provide a WordRepository instance.
-    """
     return WordRepository()
 
 
 @pytest.fixture
 def word1(dbsession: Session) -> Word:
-    """
-    Fixture to create and provide a Word entity.
-    """
     word = Word(word="word1")
     dbsession.add(word)
     dbsession.commit()
@@ -100,9 +86,6 @@ def word1(dbsession: Session) -> Word:
 
 @pytest.fixture
 def word2(dbsession: Session) -> Word:
-    """
-    Fixture to create and provide a Word entity.
-    """
     word = Word(word="word2")
     dbsession.add(word)
     dbsession.commit()
@@ -111,9 +94,6 @@ def word2(dbsession: Session) -> Word:
 
 @pytest.fixture
 def chat(dbsession: Session) -> Chat:
-    """
-    Fixture to create and provide a Chat entity.
-    """
     created_date = datetime(2023, 1, 2, 0, 0, 0)
     updated_date = datetime(2023, 1, 2, 0, 0, 0)
     chat_entity = Chat(
@@ -161,16 +141,11 @@ def learn_service(dbsession: Session, word1: Word, word2: Word, chat: Chat) -> L
 
 @pytest.fixture
 def story_service(word1: Word, word2: Word, chat: Chat, dbsession: Session) -> StoryService:
-    """
-    Fixture to provide a StoryService instance.
-    """
     words = [word1.word, word2.word]
     context = ["contextword"]
     end_sentence = [".", "!", "?"]
     return StoryService(
-        words=words, context=context, chat_id=chat.id,
-        session=dbsession, end_sentence=end_sentence
-    )
+        words=words, context=context, chat_id=chat.id, session=dbsession, end_sentence=end_sentence)
 
 
 @pytest.fixture
@@ -179,8 +154,7 @@ def mock_update():
     telegram_chat = TelegramChat(id=456, type='private', title='Test Chat')
     message = Message(message_id=1, date=datetime.now(),
                       chat=telegram_chat, text="Test message", from_user=user)
-    update = Update(update_id=1, message=message)
-    return update
+    return Update(update_id=1, message=message)
 
 
 @pytest.fixture
@@ -219,8 +193,7 @@ def mock_document():
 
 @pytest.fixture
 def import_history_handler(mock_update, mock_session, mock_config, mock_document: MagicMock):
-    return ImportHistoryHandler(
-        update=mock_update, session=mock_session, config=mock_config, document=mock_document)
+    return ImportHistoryHandler(update=mock_update, session=mock_session, config=mock_config, document=mock_document)
 
 
 @pytest.fixture
