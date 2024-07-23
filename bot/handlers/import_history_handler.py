@@ -96,9 +96,15 @@ class ImportHistoryHandler(GenericHandler):
             json_data = json.loads(byte_array.decode('utf-8'))
             extracted_data = self.extract_message_data(json_data)
 
+            one_word_list = ['я', 'в', 'к', 'о', 'с',
+                             'у', 'и', 'а', 'б', 'а', 'о', 'э', 'у']
+            
+            skip_chars = ['\\', '/']
+
             for message in extracted_data["messages"]:
                 words = self.extract_words(message["text"])
-                self.learn_queue.push(words, self.chat.id)
+                filtered_words = [word for word in words if word in one_word_list or any(char in word for char in skip_chars)]
+                self.learn_queue.push(filtered_words, self.chat.id)
 
             return (
                 f"Successfully processed {len(extracted_data['messages'])} "

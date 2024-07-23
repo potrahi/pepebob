@@ -1,12 +1,85 @@
 import json
 from typing import Callable, Generator
-from unittest.mock import MagicMock, AsyncMock
+from unittest.mock import MagicMock, AsyncMock, patch
 import pytest
 from pytest_mock import MockerFixture
 from telegram import Document, File
-from telegram.error import NetworkError
+from telegram.error import NetworkError, TimedOut
 from core.repositories.learn_queue_repository import LearnQueueRepository
 from bot.handlers.import_history_handler import ImportHistoryHandler
+
+
+@pytest.mark.asyncio
+async def test_call_network_error(import_history_handler: ImportHistoryHandler, mocker: Callable[..., Generator[MockerFixture, None, None]]):
+    mocker.patch.object(import_history_handler, 'process_json_file',
+                        side_effect=NetworkError("Network error"))
+    result = await import_history_handler.call()
+    assert result == "An error occurred: Network error"
+
+
+@pytest.mark.asyncio
+async def test_call_timed_out_error(import_history_handler: ImportHistoryHandler, mocker: Callable[..., Generator[MockerFixture, None, None]]):
+    mocker.patch.object(import_history_handler,
+                        'process_json_file', side_effect=TimedOut("Timed out"))
+    result = await import_history_handler.call()
+    assert result == "An error occurred: Timed out"
+
+
+@pytest.mark.asyncio
+async def test_process_json_file_json_decode_error(import_history_handler: ImportHistoryHandler, mocker: Callable[..., Generator[MockerFixture, None, None]]):
+    telegram_file = MagicMock(spec=File)
+    telegram_file.download_as_bytearray = AsyncMock(
+        return_value=b'invalid json')
+
+    mocker.patch.object(import_history_handler,
+                        'is_valid_document', return_value=True)
+    mocker.patch.object(import_history_handler,
+                        'download_file', return_value=telegram_file)
+
+    result = await import_history_handler.process_json_file()
+    assert result == "Failed to decode the JSON file."
+
+
+@pytest.mark.asyncio
+async def test_process_json_file_network_error(import_history_handler: ImportHistoryHandler, mocker: Callable[..., Generator[MockerFixture, None, None]]):
+    telegram_file = MagicMock(spec=File)
+    telegram_file.download_as_bytearray = AsyncMock(
+        side_effect=NetworkError("Network error"))
+
+    mocker.patch.object(import_history_handler,
+                        'is_valid_document', return_value=True)
+    mocker.patch.object(import_history_handler,
+                        'download_file', return_value=telegram_file)
+
+    result = await import_history_handler.process_json_file()
+    assert result == "Network error occurred while processing the JSON file."
+
+
+@pytest.mark.asyncio
+async def test_download_file_retry_delay(import_history_handler: ImportHistoryHandler, mocker: Callable[..., Generator[MockerFixture, None, None]]):
+    document = MagicMock(spec=Document)
+    document.get_file = AsyncMock(
+        side_effect=[NetworkError("Network error"), MagicMock(spec=File)])
+    import_history_handler.document = document
+
+    with patch('asyncio.sleep', new=AsyncMock()) as mock_sleep:
+        result = await import_history_handler.download_file(retries=2, delay=1)
+        mock_sleep.assert_called_once_with(1)
+        assert result is not None
+
+
+def test_extract_words_edge_cases(import_history_handler: ImportHistoryHandler):
+    text = "hello world! 123, test"
+    result = import_history_handler.extract_words(text)
+    assert result == ["hello", "world!", "123,", "test"]
+
+    text = "word1, word2.word3!"
+    result = import_history_handler.extract_words(text)
+    assert result == ["word1,", "word2.word3!"]
+
+    text = "no_special_chars"
+    result = import_history_handler.extract_words(text)
+    assert result == ["no_special_chars"]
 
 
 @pytest.mark.asyncio
